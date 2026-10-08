@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ye Olde Converter</title>
+    <style>
+      :root {
+        --bg: #f7f4ee;
+        --panel: #fffdf9;
+        --ink: #2a2622;
+        --muted: #6d655c;
+        --line: #e3dcd1;
+        --accent: #8a4b1c;
+        --accent-soft: #f3e6d8;
+        --band: rgba(138, 75, 28, 0.14);
+        --high: #2f6b3a;
+        --medium: #8a6a12;
+        --low: #a5521c;
+        --vlow: #a12a2a;
+        --radius: 10px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1b1916;
+          --panel: #24211d;
+          --ink: #ece6dc;
+          --muted: #a59c90;
+          --line: #3a352f;
+          --accent: #e0a46c;
+          --accent-soft: #3a2d21;
+          --band: rgba(224, 164, 108, 0.18);
+          --high: #7cc48a;
+          --medium: #d9b958;
+          --low: #e49a62;
+          --vlow: #ec7b7b;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          16px/1.5 Georgia,
+          "Iowan Old Style",
+          "Palatino Linotype",
+          serif;
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 24px 16px 64px;
+      }
+      h1 {
+        font-size: 1.9rem;
+        margin: 0 0 4px;
+        letter-spacing: 0.01em;
+      }
+      h2 {
+        font-size: 1.15rem;
+        margin: 0 0 12px;
+      }
+      h3 {
+        font-size: 1rem;
+        margin: 18px 0 6px;
+      }
+      p {
+        margin: 0 0 10px;
+      }
+      .lede {
+        color: var(--muted);
+        margin-bottom: 20px;
+      }
+      a {
+        color: var(--accent);
+      }
+      .tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .tab {
+        font: inherit;
+        padding: 8px 18px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--ink);
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .tab[aria-selected="true"] {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--panel);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        align-items: end;
+      }
+      label {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 4px;
+        font-family: system-ui, sans-serif;
+      }
+      input,
+      select {
+        width: 100%;
+        font: inherit;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      input:focus,
+      select:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      .hint {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 4px;
+        font-family: system-ui, sans-serif;
+      }
+      .answer {
+        font-size: 2.2rem;
+        line-height: 1.15;
+        margin: 4px 0 6px;
+      }
+      .answer small {
+        font-size: 1rem;
+        color: var(--muted);
+      }
+      .sub {
+        color: var(--muted);
+      }
+      .badge {
+        display: inline-block;
+        font:
+          600 0.75rem system-ui,
+          sans-serif;
+        padding: 2px 9px;
+        border-radius: 999px;
+        border: 1px solid currentColor;
+        vertical-align: middle;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .c-high,
+      .c-exact {
+        color: var(--high);
+      }
+      .c-medium,
+      .c-approximate {
+        color: var(--medium);
+      }
+      .c-low,
+      .c-uncertain {
+        color: var(--low);
+      }
+      .c-very-low {
+        color: var(--vlow);
+      }
+      .error {
+        color: var(--vlow);
+        font-family: system-ui, sans-serif;
+      }
+      .callout {
+        background: var(--accent-soft);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin: 12px 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        font:
+          600 0.78rem system-ui,
+          sans-serif;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      td.num,
+      th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      tr.clickable {
+        cursor: pointer;
+      }
+      tr.clickable:hover {
+        background: var(--accent-soft);
+      }
+      tr.unused td {
+        color: var(--muted);
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      details {
+        margin-top: 10px;
+      }
+      summary {
+        cursor: pointer;
+        color: var(--accent);
+        font-family: system-ui, sans-serif;
+        font-size: 0.9rem;
+      }
+      .sources {
+        list-style: none;
+        padding: 0;
+        margin: 8px 0 0;
+      }
+      .sources li {
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--line);
+        font-size: 0.9rem;
+      }
+      .sources .why {
+        color: var(--muted);
+        display: block;
+        margin-top: 2px;
+      }
+      .chain {
+        font-family: system-ui, sans-serif;
+        font-size: 0.9rem;
+      }
+      .chain span {
+        white-space: nowrap;
+      }
+      .meta {
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+      .two {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      }
+      svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .chart-line {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 2;
+      }
+      .chart-band {
+        fill: var(--band);
+        stroke: none;
+      }
+      .chart-axis {
+        stroke: var(--line);
+      }
+      .chart-text {
+        fill: var(--muted);
+        font:
+          11px system-ui,
+          sans-serif;
+      }
+      .chart-dot {
+        fill: var(--accent);
+        stroke: var(--panel);
+        stroke-width: 2;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Ye Olde Converter</h1>
+      <p class="lede">
+        What was that sum of money really worth? How long is a cubit? Pick a
+        currency or unit from a book and see it in today's terms, with the
+        reasoning and sources behind every number. Beware! Not fact checked, not
+        scientific, all AI, but hopefully the linked sources can back it up
+      </p>
+
+      <div class="tabs" role="tablist">
+        <button
+          class="tab"
+          role="tab"
+          id="tab-money"
+          aria-selected="true"
+          aria-controls="money"
+        >
+          Money
+        </button>
+        <button
+          class="tab"
+          role="tab"
+          id="tab-units"
+          aria-selected="false"
+          aria-controls="units"
+        >
+          Measures
+        </button>
+      </div>
+
+      <!-- ============================== MONEY ============================== -->
+      <section id="money" role="tabpanel" aria-labelledby="tab-money">
+        <div class="panel">
+          <div class="grid">
+            <div>
+              <label for="m-currency">Currency</label>
+              <select id="m-currency"></select>
+            </div>
+            <div>
+              <label for="m-year">Year</label>
+              <input id="m-year" type="number" step="1" />
+              <div class="hint" id="m-year-hint"></div>
+            </div>
+            <div>
+              <label for="m-amount">Amount</label>
+              <input
+                id="m-amount"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <div class="hint" id="m-amount-hint"></div>
+            </div>
+            <div>
+              <label for="m-denom">…if just a number, in</label>
+              <select id="m-denom"></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="m-result" aria-live="polite"></div>
+
+        <div class="panel">
+          <h2>Compare with another currency or year</h2>
+          <div class="grid">
+            <div>
+              <label for="m-to-currency">Currency</label>
+              <select id="m-to-currency"></select>
+            </div>
+            <div>
+              <label for="m-to-year">Year</label>
+              <input id="m-to-year" type="number" step="1" />
+              <div class="hint" id="m-to-year-hint"></div>
+            </div>
+          </div>
+          <div id="m-compare" aria-live="polite" style="margin-top: 12px"></div>
+        </div>
+
+        <div class="panel">
+          <h2 id="m-denoms-title">Coins and units of account</h2>
+          <p class="sub" id="m-denoms-sub"></p>
+          <div class="table-wrap"><table id="m-denoms"></table></div>
+        </div>
+      </section>
+
+      <!-- ============================== UNITS ============================== -->
+      <section id="units" role="tabpanel" aria-labelledby="tab-units" hidden>
+        <div class="panel">
+          <div class="grid">
+            <div>
+              <label for="u-category">Kind of measure</label>
+              <select id="u-category"></select>
+            </div>
+            <div>
+              <label for="u-amount">Amount</label>
+              <input id="u-amount" type="number" step="any" value="1" />
+            </div>
+            <div>
+              <label for="u-from">From</label>
+              <select id="u-from"></select>
+            </div>
+            <div>
+              <label for="u-to">To</label>
+              <select id="u-to"></select>
+            </div>
+          </div>
+          <div class="hint" style="margin-top: 8px">
+            Tip: units are grouped by measuring system; ancient and local units
+            show a range because they varied.
+          </div>
+        </div>
+
+        <div class="panel" id="u-result" aria-live="polite"></div>
+        <div class="two" id="u-details"></div>
+      </section>
+
+      <p class="meta">
+        Money values are consumer-price comparisons in 2025 US dollars. Data,
+        methodology and sources: hopefully trustworthy but not necessarily
+        _accurate_, all decided by AI, see the project README for details on
+        what the AI thought was the reasoning.
+      </p>
+    </main>
+
+    <script src="../dist/yeoldeconverter.iife.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        if (typeof YeOldeConverter === "undefined") {
+          document
+            .querySelector("main")
+            .insertAdjacentHTML(
+              "afterbegin",
+              '<p class="panel error">Could not load <code>dist/yeoldeconverter.iife.min.js</code>. Run <code>npm run bundle</code> first.</p>',
+            );
+          return;
+        }
+        const { currencies: C, units: U, CurrencyLibrary } = YeOldeConverter;
+        const $ = (id) => document.getElementById(id);
+
+        // ------------------------------------------------------------ helpers
+        const esc = (s) =>
+          String(s ?? "").replace(
+            /[&<>"']/g,
+            (ch) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[ch],
+          );
+        const yearLabel = (y) =>
+          y === null || y === undefined
+            ? "today"
+            : y < 0
+              ? `${-y} BCE`
+              : y < 1000
+                ? `${y} CE`
+                : String(y);
+        const eraLabel = (era) =>
+          `${yearLabel(era[0])}–${era[1] === null ? "present" : yearLabel(era[1])}`;
+
+        function num(x, sig = 4) {
+          if (!isFinite(x)) return "—";
+          if (x === 0) return "0";
+          const abs = Math.abs(x);
+          if (abs >= 1e6 || abs < 1e-4)
+            return x
+              .toExponential(2)
+              .replace("e+", " × 10^")
+              .replace("e-", " × 10^-");
+          const digits = Math.max(0, sig - 1 - Math.floor(Math.log10(abs)));
+          return x.toLocaleString(undefined, {
+            maximumFractionDigits: Math.min(digits, 8),
+          });
+        }
+        function usd(x) {
+          if (!isFinite(x)) return "—";
+          if (x >= 100) return "$" + Math.round(x).toLocaleString();
+          if (x >= 1) return "$" + x.toFixed(2);
+          if (x >= 0.01)
+            return (
+              "$" + x.toFixed(2) + (x < 0.1 ? ` (${Math.round(x * 100)}¢)` : "")
+            );
+          return "$" + x.toPrecision(2);
+        }
+        function fraction(x) {
+          if (x >= 1) return num(x);
+          const inv = 1 / x;
+          return Math.abs(inv - Math.round(inv)) < 1e-6
+            ? `1/${Math.round(inv)}`
+            : num(x);
+        }
+        const LSD = new Set(["gbp", "scots", "iep_old"]);
+        const PLURALS = {
+          denarius: "denarii",
+          solidus: "solidi",
+          drachma: "drachmae",
+          lira: "lire",
+          yen: "yen",
+          yuan: "yuan",
+          ryō: "ryō",
+          akçe: "akçe",
+          kuruş: "kuruş",
+          "pound Scots": "pounds Scots",
+          "Irish pound": "Irish pounds",
+          "dollar (8 reales)": "Spanish dollars",
+          "milréis (1,000 réis)": "milréis",
+        };
+        const unitName = (c, n) =>
+          Math.abs(n - 1) < 1e-9
+            ? c.baseUnit.replace(/\s*\(.*\)$/, "")
+            : (PLURALS[c.baseUnit] ?? c.baseUnit + "s");
+        function inBase(c, amount, year) {
+          if (c.id === "usd" && year >= 1792)
+            return usd(amount).replace(/ \(.*\)$/, "");
+          if (LSD.has(c.id) && year < 1971)
+            return (
+              CurrencyLibrary.formatLsd(amount) +
+              (c.id === "scots" ? " Scots" : c.id === "iep_old" ? " Irish" : "")
+            );
+          return `${num(amount)} ${unitName(c, amount)}`;
+        }
+        const shortName = (d) => d.name.replace(/\s*\(.*\)$/, "");
+        const confidenceText = {
+          high: "Good data: a solid price index and a well-documented exchange rate or parity.",
+          medium:
+            "Reasonable estimate: good price data, but the link to the currency is a metal content or an approximate rate.",
+          low: "Rough estimate: sparse price data or a reconstructed rate. Treat as an order of magnitude.",
+          "very low":
+            "Very rough: no price index exists; based on what the money bought in bread, grain or rice. The top of the range is the wage-based value.",
+        };
+        const precisionText = {
+          exact: "Exact: fixed by law or definition.",
+          approximate:
+            "Approximate: a well-measured historical standard, but not an exact legal definition.",
+          uncertain:
+            "Uncertain: the unit varied by place or period, or is reconstructed from archaeology. A range is shown.",
+        };
+        const badge = (level) =>
+          `<span class="badge c-${level.replace(" ", "-")}">${esc(level)}</span>`;
+
+        function sourcesList(sources) {
+          const seen = new Set();
+          const items = sources.filter((s) => {
+            const k = s.url + s.reasoning;
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          });
+          return `<ul class="sources">${items
+            .map(
+              (
+                s,
+              ) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>
+      <span class="why">${esc(s.reasoning)}</span></li>`,
+            )
+            .join("")}</ul>`;
+        }
+
+        // ------------------------------------------------------------ tabs
+        for (const [tabId, panelId] of [
+          ["tab-money", "money"],
+          ["tab-units", "units"],
+        ]) {
+          $(tabId).addEventListener("click", () => {
+            for (const [t, p] of [
+              ["tab-money", "money"],
+              ["tab-units", "units"],
+            ]) {
+              $(t).setAttribute("aria-selected", String(t === tabId));
+              $(p).hidden = p !== panelId;
+            }
+          });
+        }
+
+        // ============================================================ MONEY
+        const EXAMPLES = {
+          gbp: "£3 4s 6d",
+          scots: "100 merks",
+          iep_old: "£5",
+          usd: "25",
+          spd: "8 reales",
+          livre: "10 livres 5 sous",
+          frf: "20",
+          thaler: "5 thalers",
+          mark: "20",
+          aut_gulden: "10 gulden",
+          florin_fl: "100 florins",
+          ducat_ve: "1,000 ducats",
+          itl: "100 lire",
+          nlg: "10 guilders",
+          pte_real: "1 moidore",
+          rub_imp: "25 rubles",
+          ryo: "1 ryō",
+          jpy: "100",
+          tael: "50 taels",
+          inr: "1 lakh",
+          akce: "1000",
+          kurus: "100",
+          denarius: "30 denarii",
+          solidus: "10",
+          drachma_att: "1 talent",
+          shekel: "30 shekels",
+        };
+        const DEFAULT_YEAR = {
+          gbp: 1815,
+          usd: 1860,
+          livre: 1780,
+          denarius: 50,
+          drachma_att: -400,
+          shekel: 30,
+          ryo: 1750,
+          solidus: 500,
+        };
+
+        const sortedCurrencies = [...C.list()].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        );
+        const currencyOption = (c) =>
+          `<option value="${esc(c.id)}">${esc(c.name)} (${esc(eraLabel(C.coverage(c)))})</option>`;
+        $("m-currency").innerHTML = sortedCurrencies
+          .map(currencyOption)
+          .join("");
+        $("m-to-currency").innerHTML = sortedCurrencies
+          .map(currencyOption)
+          .join("");
+        $("m-currency").value = "gbp";
+        $("m-to-currency").value = "usd";
+
+        function clampYear(input, c, preferred) {
+          const [a, b] = C.coverage(c);
+          let y = Number(input.value);
+          if (!Number.isFinite(y) || input.value === "")
+            y = preferred ?? Math.round((a + b) / 2);
+          y = Math.min(b, Math.max(a, Math.round(y)));
+          input.value = y;
+          input.min = a;
+          input.max = b;
+          return y;
+        }
+
+        function onCurrencyChange() {
+          const c = C.get($("m-currency").value);
+          const [a, b] = C.coverage(c);
+          $("m-year").value = DEFAULT_YEAR[c.id] ?? Math.round((a + b) / 2);
+          clampYear($("m-year"), c);
+          $("m-amount").value = EXAMPLES[c.id] ?? "1";
+          $("m-to-year").value = $("m-year").value; // default comparison: same year, so it adds something beyond the 2025 figure
+          $("m-year-hint").textContent =
+            `Data: ${yearLabel(a)} to ${yearLabel(b)}${a < 0 ? " (use negative years for BCE)" : ""}`;
+          fillDenoms(c);
+          update();
+        }
+
+        function fillDenoms(c) {
+          const base = C.denomination(c);
+          $("m-denom").innerHTML =
+            c.denominations
+              .map(
+                (d) =>
+                  `<option value="${esc(d.id)}"${d.id === base.id ? " selected" : ""}>${esc(d.name)}</option>`,
+              )
+              .join("") || `<option value="">${esc(c.baseUnit)}</option>`;
+        }
+
+        function parseMoney(c, year) {
+          const text = $("m-amount").value.trim();
+          if (!text)
+            throw new Error(
+              "Enter an amount, e.g. " + (EXAMPLES[c.id] ?? "10"),
+            );
+          if (/^[\d.,\s½¼¾\/]+$/.test(text)) {
+            const d = $("m-denom").value || C.denomination(c).id;
+            return C.parseAmount(`${text} ${d}`, c, year);
+          }
+          return C.parseAmount(text, c, year);
+        }
+
+        function update() {
+          const c = C.get($("m-currency").value);
+          const year = clampYear($("m-year"), c);
+          $("m-amount-hint").textContent =
+            `Try “${EXAMPLES[c.id] ?? "10"}”, a number, or names of coins`;
+          renderDenoms(c, year);
+          let parsed, res;
+          try {
+            parsed = parseMoney(c, year);
+            res = C.toUSD2025(parsed.base, { currency: c.id, year });
+          } catch (e) {
+            $("m-result").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+            $("m-compare").innerHTML = "";
+            return;
+          }
+          renderResult(c, year, parsed, res);
+          renderCompare(c, year, parsed);
+        }
+
+        function renderResult(c, year, parsed, res) {
+          const v = res.from;
+          const typed = $("m-amount").value.trim();
+          const numeric = /^[\d.,\s½¼¾\/]+$/.test(typed);
+          const partsText = numeric
+            ? `${typed} × ${shortName(parsed.parts[0].denomination).toLowerCase()}`
+            : parsed.parts
+                .map(
+                  (p) =>
+                    `${num(p.amount)} × ${shortName(p.denomination).toLowerCase()}`,
+                )
+                .join(" + ");
+          const baseText = inBase(c, parsed.base, year);
+          const pointYears = v.points
+            .map((p) => yearLabel(p.year))
+            .join(" and ");
+          const p0 = v.points[0];
+          const interp = v.interpolated
+            ? `<p class="sub">${yearLabel(year)} falls between the data points for ${pointYears}, so the value is interpolated between them.</p>`
+            : "";
+
+          $("m-result").innerHTML = `
+      <div class="sub">${esc(numeric ? partsText : typed)} in ${esc(yearLabel(year))}${
+        parsed.parts.length > 1
+          ? ` &nbsp;·&nbsp; read as ${esc(partsText)}`
+          : ""
+      }${
+        baseText !== (numeric ? partsText : typed) ? ` = ${esc(baseText)}` : ""
+      }</div>
+      <div class="answer">≈ ${usd(res.amount)} <small>in 2025 US dollars</small></div>
+      <div>Plausible range <strong>${usd(res.low)} – ${usd(res.high)}</strong> &nbsp; ${badge(res.confidence)}</div>
+      <p class="sub" style="margin-top:6px">${esc(confidenceText[res.confidence])}</p>
+
+      <div class="callout">
+        <strong>What this means:</strong> in ${esc(yearLabel(year))}, ${esc(baseText)} bought roughly the same everyday goods
+        (food, fuel, clothing) as ${usd(res.amount)} does today.
+        ${
+          (year < 1900 && c.id !== "usd") || year < 1850
+            ? `Wages were far lower then, though, so as a share of someone's income the
+        sum would have felt several times larger (closer to the top of the range, or beyond).`
+            : ""
+        }
+      </div>
+
+      ${interp}
+      <h3>One ${esc(c.baseUnit)} over time</h3>
+      ${chart(c, year)}
+      <p class="meta">Value of one ${esc(c.baseUnit)} in 2025 dollars (log scale); the shaded band is the plausible range.</p>
+
+      <h3>How this was worked out</h3>
+      <p>Method: ${esc(p0.method)}. ${
+        p0.provenance === "compiled"
+          ? "Some figures here were compiled by hand from the cited references (not computed from a downloaded dataset)."
+          : "Computed from downloaded price-index and exchange-rate datasets."
+      }</p>
+      ${c.notes ? `<p class="sub">${esc(c.notes)}</p>` : ""}
+      ${v.points
+        .map(
+          (p) => `<details${v.points.length === 1 ? " open" : ""}>
+        <summary>Sources and reasoning for the ${esc(yearLabel(p.year))} data point (${usd(p.usd2025)} per ${esc(c.baseUnit)})</summary>
+        ${sourcesList(p.sources)}</details>`,
+        )
+        .join("")}
+    `;
+        }
+
+        function chart(c, year) {
+          const s = c.series;
+          if (s.length < 2) return "";
+          const W = 640,
+            H = 170,
+            L = 52,
+            R = 10,
+            T = 10,
+            B = 24;
+          const x0 = s[0].year,
+            x1 = s[s.length - 1].year;
+          const lo = Math.min(...s.map((p) => p.low)),
+            hi = Math.max(...s.map((p) => p.high));
+          const ly0 = Math.log(lo),
+            ly1 = Math.log(hi);
+          const X = (y) => L + ((y - x0) / (x1 - x0 || 1)) * (W - L - R);
+          const Y = (v) =>
+            T + (1 - (Math.log(v) - ly0) / (ly1 - ly0 || 1)) * (H - T - B);
+          const line = s
+            .map((p) => `${X(p.year).toFixed(1)},${Y(p.usd2025).toFixed(1)}`)
+            .join(" ");
+          const band = s
+            .map((p) => `${X(p.year).toFixed(1)},${Y(p.high).toFixed(1)}`)
+            .concat(
+              [...s]
+                .reverse()
+                .map((p) => `${X(p.year).toFixed(1)},${Y(p.low).toFixed(1)}`),
+            )
+            .join(" ");
+          const v = C.valueAt(c, year);
+          return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Value of one ${esc(c.baseUnit)} in 2025 dollars over time">
+      <line class="chart-axis" x1="${L}" y1="${H - B}" x2="${W - R}" y2="${H - B}"/>
+      <line class="chart-axis" x1="${L}" y1="${T}" x2="${L}" y2="${H - B}"/>
+      <polygon class="chart-band" points="${band}"/>
+      <polyline class="chart-line" points="${line}"/>
+      <circle class="chart-dot" r="5" cx="${X(year).toFixed(1)}" cy="${Y(v.usd2025).toFixed(1)}"/>
+      <text class="chart-text" x="${L}" y="${H - 6}">${esc(yearLabel(x0))}</text>
+      <text class="chart-text" x="${W - R}" y="${H - 6}" text-anchor="end">${esc(yearLabel(x1))}</text>
+      <text class="chart-text" x="${L - 6}" y="${T + 10}" text-anchor="end">${esc(usd(hi))}</text>
+      <text class="chart-text" x="${L - 6}" y="${H - B}" text-anchor="end">${esc(usd(lo))}</text>
+    </svg>`;
+        }
+
+        function renderCompare(c, year, parsed) {
+          const t = C.get($("m-to-currency").value);
+          const tYear = clampYear($("m-to-year"), t, 2025);
+          const [a, b] = C.coverage(t);
+          $("m-to-year-hint").textContent =
+            `Data: ${yearLabel(a)} to ${yearLabel(b)}`;
+          try {
+            const r = C.convert(
+              parsed.base,
+              { currency: c.id, year },
+              { currency: t.id, year: tYear },
+            );
+            const fmt = (x) => inBase(t, x, tYear);
+            $("m-compare").innerHTML = `
+        <div class="answer" style="font-size:1.6rem">≈ ${esc(fmt(r.amount))}</div>
+        <div class="sub">in ${esc(t.name)}, ${esc(yearLabel(tYear))} · range ${esc(fmt(r.low))} – ${esc(fmt(r.high))} ${badge(r.confidence)}</div>
+        <p class="sub" style="margin-top:6px">Same purchasing power: ${esc(inBase(c, parsed.base, year))} in ${esc(yearLabel(year))}
+        → ${usd(r.usd2025)} today → ${esc(fmt(r.amount))} in ${esc(yearLabel(tYear))}. This is not a market exchange rate.
+        Comparing two currencies in the same year can differ from that year's exchange rate, because their prices moved
+        differently between then and 2025.</p>`;
+          } catch (e) {
+            $("m-compare").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+          }
+        }
+
+        function renderDenoms(c, year) {
+          let v = null;
+          try {
+            v = C.valueAt(c, year);
+          } catch (_) {
+            /* no data */
+          }
+          $("m-denoms-title").textContent =
+            `Coins and units of account: ${c.name}, ${yearLabel(year)}`;
+          $("m-denoms-sub").textContent =
+            `Values in ${c.baseUnit}s and in 2025 dollars for ${yearLabel(year)}. Greyed rows were not current then. Click a row to use it.`;
+          const rows = c.denominations
+            .map((d) => {
+              const info = C.describeDenomination(c, d.id, year);
+              const per = v ? v.usd2025 * info.valueInBase : NaN;
+              const rel =
+                LSD.has(c.id) && year < 1971
+                  ? CurrencyLibrary.formatLsd(info.valueInBase)
+                  : `${fraction(info.valueInBase)} ${c.baseUnit}`;
+              const alias = (d.aliases ?? []).length
+                ? `<div class="meta">also: ${esc(d.aliases.join(", "))}</div>`
+                : "";
+              return `<tr class="clickable${info.inUse ? "" : " unused"}" data-denom="${esc(d.id)}">
+        <td><strong>${esc(d.name)}</strong>${d.symbol ? ` <span class="meta">(${esc(d.symbol)})</span>` : ""}${alias}
+            ${d.notes ? `<div class="meta">${esc(d.notes)}</div>` : ""}</td>
+        <td class="num">${esc(rel)}</td>
+        <td class="num">${usd(per)}</td></tr>`;
+            })
+            .join("");
+          $("m-denoms").innerHTML =
+            `<thead><tr><th>Name</th><th class="num">Worth</th><th class="num">≈ 2025 $</th></tr></thead><tbody>${rows}</tbody>`;
+        }
+
+        $("m-denoms").addEventListener("click", (e) => {
+          const tr = e.target.closest("tr[data-denom]");
+          if (!tr) return;
+          $("m-denom").value = tr.dataset.denom;
+          $("m-amount").value = "1";
+          update();
+          $("m-result").scrollIntoView?.({
+            behavior: "smooth",
+            block: "start",
+          });
+        });
+
+        $("m-currency").addEventListener("change", onCurrencyChange);
+        for (const id of [
+          "m-year",
+          "m-amount",
+          "m-denom",
+          "m-to-currency",
+          "m-to-year",
+        ]) {
+          $(id).addEventListener(
+            id === "m-amount" || id.endsWith("year") ? "input" : "change",
+            update,
+          );
+        }
+        $("m-year").addEventListener("change", update);
+        onCurrencyChange();
+
+        // ============================================================ UNITS
+        const CATEGORIES = [
+          ["length", "Length & distance"],
+          ["area", "Area & land"],
+          ["volume", "Volume & capacity"],
+          ["mass", "Weight & mass"],
+          ["count", "Counting"],
+        ];
+        const MODERN = {
+          length: ["metre", "kilometre", "inch", "foot", "yard", "mile"],
+          area: ["sq_metre", "hectare", "sq_foot", "acre", "sq_mile"],
+          volume: ["litre", "floz_us", "pt_imp", "gal_us", "gal_imp", "bu_us"],
+          mass: ["kilogram", "oz", "lb", "stone", "tonne"],
+          count: ["each", "dozen", "score", "gross"],
+        };
+        const DEFAULT_PAIR = {
+          length: ["league", "kilometre"],
+          area: ["hide", "hectare"],
+          volume: ["hogshead_wine", "litre"],
+          mass: ["stone", "kilogram"],
+          count: ["score", "each"],
+        };
+
+        $("u-category").innerHTML = CATEGORIES.map(
+          ([v, l]) => `<option value="${v}">${l}</option>`,
+        ).join("");
+
+        function unitOptions(category) {
+          const groups = new Map();
+          for (const u of U.list(category)) {
+            if (!groups.has(u.system)) groups.set(u.system, []);
+            groups.get(u.system).push(u);
+          }
+          return [...groups.entries()]
+            .map(
+              ([sys, us]) =>
+                `<optgroup label="${esc(sys)}">${us
+                  .map(
+                    (u) =>
+                      `<option value="${esc(u.id)}">${esc(u.name)}</option>`,
+                  )
+                  .join("")}</optgroup>`,
+            )
+            .join("");
+        }
+
+        function onCategoryChange() {
+          const cat = $("u-category").value;
+          const opts = unitOptions(cat);
+          $("u-from").innerHTML = opts;
+          $("u-to").innerHTML = opts;
+          [$("u-from").value, $("u-to").value] = DEFAULT_PAIR[cat];
+          updateUnits();
+        }
+
+        function unitCard(u, role) {
+          const chain = U.definitionChain(u);
+          const base = U.data.baseUnits[u.category];
+          const chainHtml = chain
+            .map(
+              (s, i) =>
+                `<span>${i === 0 ? `<strong>${esc(s.unit.name)}</strong>` : esc(s.unit.name)} = ${esc(s.text)}</span>`,
+            )
+            .join("<br>↳ ");
+          const range =
+            u.precision === "uncertain"
+              ? ` (range ${num(u.low, 4)}–${num(u.high, 4)} ${esc(base)})`
+              : "";
+          return `<div class="panel">
+      <div class="meta">${esc(role)}</div>
+      <h2 style="margin-bottom:4px">${esc(u.name)} ${badge(u.precision)}</h2>
+      <p class="meta">${esc(u.system)} · ${esc(u.region)} · ${esc(eraLabel(u.era))}</p>
+      <p>1 ${esc(u.name.toLowerCase())} = <strong>${num(u.si, 6)} ${esc(base)}</strong>${range}</p>
+      ${u.aliases.length ? `<p class="meta">Also called: ${esc(u.aliases.join(", "))}</p>` : ""}
+      ${u.notes ? `<p>${esc(u.notes)}</p>` : ""}
+      <h3>How it's defined</h3>
+      <div class="chain">${chainHtml}</div>
+      <details><summary>Sources and reasoning</summary>${sourcesList(u.sources)}</details>
+    </div>`;
+        }
+
+        function updateUnits() {
+          const amount = Number($("u-amount").value);
+          const from = U.get($("u-from").value);
+          const to = U.get($("u-to").value);
+          if (!Number.isFinite(amount)) {
+            $("u-result").innerHTML = `<p class="error">Enter a number.</p>`;
+            return;
+          }
+          const r = U.convert(amount, from, to);
+          const lower = (u) => u.name.toLowerCase();
+          const others = MODERN[from.category]
+            .filter((id) => id !== from.id)
+            .map((id) => U.convert(amount, from, id));
+          $("u-result").innerHTML = `
+      <div class="sub">${num(amount, 6)} × ${esc(lower(from))}</div>
+      <div class="answer">= ${num(r.value, 6)} <small>${esc(lower(to))}</small></div>
+      ${r.precision === "uncertain" ? `<div>Plausible range <strong>${num(r.low)} – ${num(r.high)}</strong></div>` : ""}
+      <p class="sub" style="margin-top:6px">${badge(r.precision)} ${esc(precisionText[r.precision])}</p>
+      <h3>In familiar units</h3>
+      <div class="table-wrap"><table><tbody>${others
+        .map(
+          (o) => `<tr><td>${esc(o.to.name)}</td>
+        <td class="num">${num(o.value, 6)}${o.precision === "uncertain" ? ` <span class="meta">(${num(o.low)}–${num(o.high)})</span>` : ""}</td></tr>`,
+        )
+        .join("")}
+      </tbody></table></div>`;
+          $("u-details").innerHTML =
+            unitCard(from, "From") +
+            (to.id !== from.id ? unitCard(to, "To") : "");
+        }
+
+        $("u-category").addEventListener("change", onCategoryChange);
+        for (const id of ["u-amount", "u-from", "u-to"])
+          $(id).addEventListener(
+            id === "u-amount" ? "input" : "change",
+            updateUnits,
+          );
+        onCategoryChange();
+      })();
+    </script>
+  </body>
+</html>

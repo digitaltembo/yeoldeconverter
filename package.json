@@ -1,0 +1,33 @@
+{
+  "name": "yeoldeconverter",
+  "version": "0.1.0",
+  "description": "Convert historical currencies (to 2025 USD) and historical units of measurement, with sources.",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./bundle": "./dist/yeoldeconverter.min.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "bundle": "npm run bundle:esm && npm run bundle:iife",
+    "bundle:esm": "esbuild src/index.ts --bundle --minify --format=esm --target=es2020 --legal-comments=none --outfile=dist/yeoldeconverter.min.js",
+    "bundle:iife": "esbuild src/index.ts --bundle --minify --format=iife --global-name=YeOldeConverter --target=es2020 --legal-comments=none --outfile=dist/yeoldeconverter.iife.min.js"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}
