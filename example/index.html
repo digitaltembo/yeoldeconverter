@@ -302,9 +302,10 @@
       <h1>Ye Olde Converter</h1>
       <p class="lede">
         What was that sum of money really worth? How long is a cubit? Pick a
-        currency or unit from a book and see it in today's terms, with the
-        reasoning and sources behind every number. Beware! Not fact checked, not
-        scientific, all AI, but hopefully the linked sources can back it up
+        currency or unit and see it in today's terms, with the reasoning and
+        sources behind every number. Beware! Not fact checked, not scientific,
+        all AI, but hopefully the linked sources can back it up. Created just so
+        I can get an instinct for what a value is, even if it is a bit wrong.
       </p>
 
       <div class="tabs" role="tablist">
@@ -406,7 +407,8 @@
           </div>
           <div class="hint" style="margin-top: 8px">
             Tip: units are grouped by measuring system; ancient and local units
-            show a range because they varied.
+            show a range because they varied. Fictional units (Lilliput,
+            Tolkien, Klingon) come last in each list.
           </div>
         </div>
 
@@ -417,8 +419,8 @@
       <p class="meta">
         Money values are consumer-price comparisons in 2025 US dollars. Data,
         methodology and sources: hopefully trustworthy but not necessarily
-        _accurate_, all decided by AI, see the project README for details on
-        what the AI thought was the reasoning.
+        <i>accurate</i>, all decided by AI, see the project README for details
+        on what the AI thought was the reasoning.
       </p>
     </main>
 
@@ -508,6 +510,7 @@
           "Irish pound": "Irish pounds",
           "dollar (8 reales)": "Spanish dollars",
           "milréis (1,000 réis)": "milréis",
+          Pu: "Pu",
         };
         const unitName = (c, n) =>
           Math.abs(n - 1) < 1e-9
@@ -524,6 +527,9 @@
           return `${num(amount)} ${unitName(c, amount)}`;
         }
         const shortName = (d) => d.name.replace(/\s*\(.*\)$/, "");
+        // fictional currencies are timeless, so no year is shown for them
+        const when = (c, year) => (c.fictional ? "" : ` in ${yearLabel(year)}`);
+        const workName = (x) => x.work.split(" (")[0];
         const confidenceText = {
           high: "Good data: a solid price index and a well-documented exchange rate or parity.",
           medium:
@@ -604,6 +610,12 @@
           solidus: "10",
           drachma_att: "1 talent",
           shekel: "30 shekels",
+          dnd: "50 gp",
+          westeros: "10 stags",
+          sw_credit: "20 truguts",
+          latinum: "3 strips",
+          ankh_morpork: "20 dollars",
+          triganic_pu: "8 ningis",
         };
         const DEFAULT_YEAR = {
           gbp: 1815,
@@ -620,23 +632,37 @@
           a.name.localeCompare(b.name),
         );
         const currencyOption = (c) =>
-          `<option value="${esc(c.id)}">${esc(c.name)} (${esc(eraLabel(C.coverage(c)))})</option>`;
-        $("m-currency").innerHTML = sortedCurrencies
-          .map(currencyOption)
-          .join("");
-        $("m-to-currency").innerHTML = sortedCurrencies
-          .map(currencyOption)
-          .join("");
+          `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.fictional ? workName(c) : eraLabel(C.coverage(c)))})</option>`;
+        const currencyGroups = (list) =>
+          `<optgroup label="Real currencies">${list
+            .filter((c) => !c.fictional)
+            .map(currencyOption)
+            .join("")}</optgroup>
+           <optgroup label="Fictional (books, films and games)">${list
+             .filter((c) => c.fictional)
+             .map(currencyOption)
+             .join("")}</optgroup>`;
+        $("m-currency").innerHTML = currencyGroups(sortedCurrencies);
+        // only currencies with a real-world value can be compared
+        $("m-to-currency").innerHTML = currencyGroups(
+          sortedCurrencies.filter((c) => C.hasValue(c)),
+        );
         $("m-currency").value = "gbp";
         $("m-to-currency").value = "usd";
 
+        // true while a year box is being typed in: the value is clamped for the
+        // calculation but not written back, so partial years like "18" survive
+        let typingYear = false;
+
         function clampYear(input, c, preferred) {
+          input.disabled = !!c.fictional;
+          if (c.fictional) return Number(input.value) || 2025; // the year doesn't matter
           const [a, b] = C.coverage(c);
           let y = Number(input.value);
           if (!Number.isFinite(y) || input.value === "")
             y = preferred ?? Math.round((a + b) / 2);
           y = Math.min(b, Math.max(a, Math.round(y)));
-          input.value = y;
+          if (!typingYear || document.activeElement !== input) input.value = y;
           input.min = a;
           input.max = b;
           return y;
@@ -644,6 +670,16 @@
 
         function onCurrencyChange() {
           const c = C.get($("m-currency").value);
+          $("m-year").placeholder = c.fictional ? "n/a" : "";
+          if (c.fictional) {
+            $("m-year").value = "";
+            $("m-amount").value = EXAMPLES[c.id] ?? "1";
+            $("m-to-year").value = 1850; // a historical comparison says more than repeating the 2025 figure
+            $("m-year-hint").textContent = `Not needed: from ${c.work}`;
+            fillDenoms(c);
+            update();
+            return;
+          }
           const [a, b] = C.coverage(c);
           $("m-year").value = DEFAULT_YEAR[c.id] ?? Math.round((a + b) / 2);
           clampYear($("m-year"), c);
@@ -688,6 +724,12 @@
           let parsed, res;
           try {
             parsed = parseMoney(c, year);
+            if (!C.hasValue(c)) {
+              renderNoValue(c, parsed);
+              $("m-compare").innerHTML =
+                `<p class="sub">${esc(c.name)} has no established real-world value, so it can't be compared with other money.</p>`;
+              return;
+            }
             res = C.toUSD2025(parsed.base, { currency: c.id, year });
           } catch (e) {
             $("m-result").innerHTML = `<p class="error">${esc(e.message)}</p>`;
@@ -698,8 +740,7 @@
           renderCompare(c, year, parsed);
         }
 
-        function renderResult(c, year, parsed, res) {
-          const v = res.from;
+        function amountHeader(c, year, parsed) {
           const typed = $("m-amount").value.trim();
           const numeric = /^[\d.,\s½¼¾\/]+$/.test(typed);
           const partsText = numeric
@@ -710,6 +751,35 @@
                     `${num(p.amount)} × ${shortName(p.denomination).toLowerCase()}`,
                 )
                 .join(" + ");
+          const shown = numeric ? partsText : typed;
+          const baseText = inBase(c, parsed.base, year);
+          return `<div class="sub">${esc(shown)}${esc(when(c, year))}${
+            parsed.parts.length > 1
+              ? ` &nbsp;·&nbsp; read as ${esc(partsText)}`
+              : ""
+          }${baseText !== shown ? ` = ${esc(baseText)}` : ""}</div>`;
+        }
+
+        function renderNoValue(c, parsed) {
+          const rows = c.denominations
+            .map(
+              (d) =>
+                `<tr><td>${esc(d.name)}</td><td class="num">${num(parsed.base / C.denominationValue(c, d, 2025), 6)}</td></tr>`,
+            )
+            .join("");
+          $("m-result").innerHTML = `
+      ${amountHeader(c, 2025, parsed)}
+      <div class="answer" style="font-size:1.6rem">No real-world value</div>
+      <p class="sub">${esc(c.name)} is fictional (${esc(c.work)}), and the work gives too little about prices or wages to
+      put it in today's dollars. Here is the sum in each of its coins instead:</p>
+      <div class="table-wrap"><table><tbody>${rows}</tbody></table></div>
+      <h3>About this currency</h3>
+      <p>${esc(c.notes)}</p>
+      <details open><summary>Sources for the coins and exchange rates</summary>${sourcesList(c.sources ?? [])}</details>`;
+        }
+
+        function renderResult(c, year, parsed, res) {
+          const v = res.from;
           const baseText = inBase(c, parsed.base, year);
           const pointYears = v.points
             .map((p) => yearLabel(p.year))
@@ -720,32 +790,41 @@
             : "";
 
           $("m-result").innerHTML = `
-      <div class="sub">${esc(numeric ? partsText : typed)} in ${esc(yearLabel(year))}${
-        parsed.parts.length > 1
-          ? ` &nbsp;·&nbsp; read as ${esc(partsText)}`
-          : ""
-      }${
-        baseText !== (numeric ? partsText : typed) ? ` = ${esc(baseText)}` : ""
-      }</div>
+      ${amountHeader(c, year, parsed)}
       <div class="answer">≈ ${usd(res.amount)} <small>in 2025 US dollars</small></div>
       <div>Plausible range <strong>${usd(res.low)} – ${usd(res.high)}</strong> &nbsp; ${badge(res.confidence)}</div>
-      <p class="sub" style="margin-top:6px">${esc(confidenceText[res.confidence])}</p>
+      <p class="sub" style="margin-top:6px">${esc(
+        c.fictional
+          ? "Very rough: a fictional currency, valued from the prices and wages the work mentions. For fun, not an official figure."
+          : confidenceText[res.confidence],
+      )}</p>
 
       <div class="callout">
-        <strong>What this means:</strong> in ${esc(yearLabel(year))}, ${esc(baseText)} bought roughly the same everyday goods
-        (food, fuel, clothing) as ${usd(res.amount)} does today.
         ${
-          (year < 1900 && c.id !== "usd") || year < 1850
-            ? `Wages were far lower then, though, so as a share of someone's income the
+          c.fictional
+            ? `<strong>What this means:</strong> going by prices and wages in ${esc(workName(c))}, ${esc(baseText)}
+        buys about what ${usd(res.amount)} buys today.`
+            : `<strong>What this means:</strong> in ${esc(yearLabel(year))}, ${esc(baseText)} bought roughly the same everyday goods
+        (food, fuel, clothing) as ${usd(res.amount)} does today.`
+        }
+        ${
+          c.fictional
+            ? ""
+            : (year < 1900 && c.id !== "usd") || year < 1850
+              ? `Wages were far lower then, though, so as a share of someone's income the
         sum would have felt several times larger (closer to the top of the range, or beyond).`
-            : ""
+              : ""
         }
       </div>
 
       ${interp}
-      <h3>One ${esc(c.baseUnit)} over time</h3>
+      ${
+        c.series.length > 1
+          ? `<h3>One ${esc(c.baseUnit)} over time</h3>
       ${chart(c, year)}
-      <p class="meta">Value of one ${esc(c.baseUnit)} in 2025 dollars (log scale); the shaded band is the plausible range.</p>
+      <p class="meta">Value of one ${esc(c.baseUnit)} in 2025 dollars (log scale); the shaded band is the plausible range.</p>`
+          : ""
+      }
 
       <h3>How this was worked out</h3>
       <p>Method: ${esc(p0.method)}. ${
@@ -754,13 +833,15 @@
           : "Computed from downloaded price-index and exchange-rate datasets."
       }</p>
       ${c.notes ? `<p class="sub">${esc(c.notes)}</p>` : ""}
+      ${c.fictional ? `<p class="sub">Fictional: from ${esc(c.work)}.</p>` : ""}
       ${v.points
         .map(
           (p) => `<details${v.points.length === 1 ? " open" : ""}>
-        <summary>Sources and reasoning for the ${esc(yearLabel(p.year))} data point (${usd(p.usd2025)} per ${esc(c.baseUnit)})</summary>
+        <summary>Sources and reasoning for ${c.fictional ? "the estimate" : `the ${esc(yearLabel(p.year))} data point`} (${usd(p.usd2025)} per ${esc(c.baseUnit)})</summary>
         ${sourcesList(p.sources)}</details>`,
         )
         .join("")}
+      ${c.sources ? `<details><summary>Sources for the coins and exchange rates</summary>${sourcesList(c.sources)}</details>` : ""}
     `;
         }
 
@@ -810,9 +891,9 @@
         function renderCompare(c, year, parsed) {
           const t = C.get($("m-to-currency").value);
           const tYear = clampYear($("m-to-year"), t, 2025);
-          const [a, b] = C.coverage(t);
-          $("m-to-year-hint").textContent =
-            `Data: ${yearLabel(a)} to ${yearLabel(b)}`;
+          $("m-to-year-hint").textContent = t.fictional
+            ? "Not needed for a fictional currency"
+            : `Data: ${yearLabel(C.coverage(t)[0])} to ${yearLabel(C.coverage(t)[1])}`;
           try {
             const r = C.convert(
               parsed.base,
@@ -822,11 +903,14 @@
             const fmt = (x) => inBase(t, x, tYear);
             $("m-compare").innerHTML = `
         <div class="answer" style="font-size:1.6rem">≈ ${esc(fmt(r.amount))}</div>
-        <div class="sub">in ${esc(t.name)}, ${esc(yearLabel(tYear))} · range ${esc(fmt(r.low))} – ${esc(fmt(r.high))} ${badge(r.confidence)}</div>
-        <p class="sub" style="margin-top:6px">Same purchasing power: ${esc(inBase(c, parsed.base, year))} in ${esc(yearLabel(year))}
-        → ${usd(r.usd2025)} today → ${esc(fmt(r.amount))} in ${esc(yearLabel(tYear))}. This is not a market exchange rate.
-        Comparing two currencies in the same year can differ from that year's exchange rate, because their prices moved
-        differently between then and 2025.</p>`;
+        <div class="sub">in ${esc(t.name)}${t.fictional ? "" : `, ${esc(yearLabel(tYear))}`} · range ${esc(fmt(r.low))} – ${esc(fmt(r.high))} ${badge(r.confidence)}</div>
+        <p class="sub" style="margin-top:6px">Same purchasing power: ${esc(inBase(c, parsed.base, year))}${esc(when(c, year))}
+        → ${usd(r.usd2025)} today → ${esc(fmt(r.amount))}${esc(when(t, tYear))}. This is not a market exchange rate.${
+          c.fictional || t.fictional
+            ? ""
+            : ` Comparing two currencies in the same year can differ from that year's exchange rate, because their prices moved
+        differently between then and 2025.`
+        }</p>`;
           } catch (e) {
             $("m-compare").innerHTML = `<p class="error">${esc(e.message)}</p>`;
           }
@@ -839,10 +923,12 @@
           } catch (_) {
             /* no data */
           }
-          $("m-denoms-title").textContent =
-            `Coins and units of account: ${c.name}, ${yearLabel(year)}`;
-          $("m-denoms-sub").textContent =
-            `Values in ${c.baseUnit}s and in 2025 dollars for ${yearLabel(year)}. Greyed rows were not current then. Click a row to use it.`;
+          $("m-denoms-title").textContent = c.fictional
+            ? `Coins: ${c.name}`
+            : `Coins and units of account: ${c.name}, ${yearLabel(year)}`;
+          $("m-denoms-sub").textContent = c.fictional
+            ? `Values in ${unitName(c, 2)}${v ? " and (very roughly) in 2025 dollars" : ""}. Click a row to use it.`
+            : `Values in ${c.baseUnit}s and in 2025 dollars for ${yearLabel(year)}. Greyed rows were not current then. Click a row to use it.`;
           const rows = c.denominations
             .map((d) => {
               const info = C.describeDenomination(c, d.id, year);
@@ -858,11 +944,11 @@
         <td><strong>${esc(d.name)}</strong>${d.symbol ? ` <span class="meta">(${esc(d.symbol)})</span>` : ""}${alias}
             ${d.notes ? `<div class="meta">${esc(d.notes)}</div>` : ""}</td>
         <td class="num">${esc(rel)}</td>
-        <td class="num">${usd(per)}</td></tr>`;
+        ${v ? `<td class="num">${usd(per)}</td>` : ""}</tr>`;
             })
             .join("");
           $("m-denoms").innerHTML =
-            `<thead><tr><th>Name</th><th class="num">Worth</th><th class="num">≈ 2025 $</th></tr></thead><tbody>${rows}</tbody>`;
+            `<thead><tr><th>Name</th><th class="num">Worth</th>${v ? `<th class="num">≈ 2025 $</th>` : ""}</tr></thead><tbody>${rows}</tbody>`;
         }
 
         $("m-denoms").addEventListener("click", (e) => {
@@ -878,19 +964,24 @@
         });
 
         $("m-currency").addEventListener("change", onCurrencyChange);
-        for (const id of [
-          "m-year",
-          "m-amount",
-          "m-denom",
-          "m-to-currency",
-          "m-to-year",
-        ]) {
+        for (const id of ["m-amount", "m-denom", "m-to-currency"]) {
           $(id).addEventListener(
-            id === "m-amount" || id.endsWith("year") ? "input" : "change",
+            id === "m-amount" ? "input" : "change",
             update,
           );
         }
-        $("m-year").addEventListener("change", update);
+        for (const id of ["m-year", "m-to-year"]) {
+          $(id).addEventListener("input", () => {
+            typingYear = true;
+            try {
+              update();
+            } finally {
+              typingYear = false;
+            }
+          });
+          // snap the typed year into range once the user commits it
+          $(id).addEventListener("change", update);
+        }
         onCurrencyChange();
 
         // ============================================================ UNITS
@@ -964,7 +1055,7 @@
           return `<div class="panel">
       <div class="meta">${esc(role)}</div>
       <h2 style="margin-bottom:4px">${esc(u.name)} ${badge(u.precision)}</h2>
-      <p class="meta">${esc(u.system)} · ${esc(u.region)} · ${esc(eraLabel(u.era))}</p>
+      <p class="meta">${esc(u.system)} · ${esc(u.region)} · ${esc(u.fictional ? `from ${u.work}` : eraLabel(u.era))}</p>
       <p>1 ${esc(u.name.toLowerCase())} = <strong>${num(u.si, 6)} ${esc(base)}</strong>${range}</p>
       ${u.aliases.length ? `<p class="meta">Also called: ${esc(u.aliases.join(", "))}</p>` : ""}
       ${u.notes ? `<p>${esc(u.notes)}</p>` : ""}
@@ -991,7 +1082,15 @@
       <div class="sub">${num(amount, 6)} × ${esc(lower(from))}</div>
       <div class="answer">= ${num(r.value, 6)} <small>${esc(lower(to))}</small></div>
       ${r.precision === "uncertain" ? `<div>Plausible range <strong>${num(r.low)} – ${num(r.high)}</strong></div>` : ""}
-      <p class="sub" style="margin-top:6px">${badge(r.precision)} ${esc(precisionText[r.precision])}</p>
+      <p class="sub" style="margin-top:6px">${badge(r.precision)} ${esc(
+        r.precision === "approximate" && [from, to].some((u) => u.system.startsWith("Planck"))
+          ? "Approximate: Planck units come from measured constants (mainly G), known to about 1 part in 100,000."
+          : precisionText[r.precision],
+      )}${
+        from.fictional || to.fictional
+          ? " Fictional units are only as precise as their authors made them."
+          : ""
+      }</p>
       <h3>In familiar units</h3>
       <div class="table-wrap"><table><tbody>${others
         .map(

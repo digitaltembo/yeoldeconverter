@@ -9,10 +9,11 @@ Data points are spaced 5 years apart where the evidence supports it, and further
 | Path | What it is |
 |---|---|
 | `data/currencies.json` | The dataset |
+| `data/currencies.slim.json`, `data/units.slim.json` | Slim copies with just the data needed for conversions (see [Slim data files](#slim-data-files)) |
 | `data/source-series.json` | Price-index and exchange-rate series pulled from the downloaded datasets |
 | `scripts/extract_series.py` | Rebuilds `source-series.json` from the raw downloads (BoE workbook, ONS CSV, Minneapolis Fed page) |
 | `scripts/build_currencies.py` | Builds `currencies.json`. All hand-compiled rates, metal contents and denominations live here |
-| `data/units.json` | 341 historical and modern units of length, area, volume, mass and count (see [Units of measurement](#units-of-measurement)) |
+| `data/units.json` | 364 historical, modern and fictional units of length, area, volume, mass and count (see [Units of measurement](#units-of-measurement)) |
 | `scripts/build_units.py` | Builds `units.json` from unit definitions |
 | `src/` | TypeScript library for converting and looking up currencies and units (see [TypeScript library](#typescript-library)) |
 | `test/` | Tests for the library (`node:test`) |
@@ -38,14 +39,43 @@ npm run bundle    # single minified files with the data inlined (see below)
 
 ### Single-file bundles
 
-`npm run bundle` uses esbuild to produce two self-contained, minified files, with both datasets inlined:
+`npm run bundle` uses esbuild to produce four self-contained, minified files. Two inline the full datasets and two inline the [slim data files](#slim-data-files):
 
-| File | Format | Use |
-|---|---|---|
-| `dist/yeoldeconverter.min.js` | ES module | `import { currencies, units } from "./yeoldeconverter.min.js"`, or the package subpath `yeoldeconverter/bundle` |
-| `dist/yeoldeconverter.iife.min.js` | Classic script | `<script src="yeoldeconverter.iife.min.js"></script>`, then `YeOldeConverter.currencies` / `YeOldeConverter.units` |
+| File | Format | Data | Size (gzipped) | Use |
+|---|---|---|---|---|
+| `dist/yeoldeconverter.min.js` | ES module | full | 2.5 MB (145 KB) | `import { currencies, units } from "./yeoldeconverter.min.js"`, or the package subpath `yeoldeconverter/bundle` |
+| `dist/yeoldeconverter.iife.min.js` | Classic script | full | 2.5 MB (145 KB) | `<script src="yeoldeconverter.iife.min.js"></script>`, then `YeOldeConverter.currencies` / `YeOldeConverter.units` |
+| `dist/yeoldeconverter.slim.min.js` | ES module | slim | 200 KB (42 KB) | As above; package subpath `yeoldeconverter/bundle/slim` |
+| `dist/yeoldeconverter.slim.iife.min.js` | Classic script | slim | 200 KB (42 KB) | As above, with the same `YeOldeConverter` global, so the two script files are interchangeable |
 
-Each file is about 2.5 MB, or about 140 KB gzipped, since servers compress the repetitive source text very well. Almost all of that is the per-data-point source citations. The bundles target ES2020.
+- **Full or slim:** almost all of a full bundle's size is the per-data-point source citations. Use the slim bundles when you only need conversions and lookups. They give identical numbers, but results carry no sources, and notes and other descriptive fields are absent.
+- **API:** every bundle exports the same API. Outside the bundles, the package's `yeoldeconverter/slim` entry point is the slim version of the main import.
+- **Target:** the bundles target ES2020.
+
+### Slim data files
+
+The full JSON files are large because every data point carries its sources and reasoning: 2.8 MB for currencies and 270 KB for units. The build scripts also write slim copies that keep only what lookups and conversions need:
+
+| File | Size | Gzipped | Keeps | Drops |
+|---|---|---|---|---|
+| `data/currencies.slim.json` | 142 KB | 28 KB | ids, names, aliases, region, era, base unit, denominations (values, periods, validity, aliases, symbols), and each data point's year, `usd2025`, `low`, `high` and `confidence` | sources, reasoning, method, provenance, notes, methodology |
+| `data/units.slim.json` | 77 KB | 12 KB | ids, names, aliases, category, system, `si`, precision, `low`/`high`, and definitions (so `definitionChain` still works) | sources, notes, region, era, `siUnit` (it is `baseUnits[category]`), `work` |
+
+- **Same shape:** the slim files are the full files with fields left out, marked `"slim": true`, and minified. The types mark the left-out fields as optional.
+- **Using them:** the library works with either. Load the slim files with `new CurrencyLibrary(data)` and `new UnitLibrary(data)`:
+
+  ```ts
+  import { CurrencyLibrary, UnitLibrary, type CurrencyData, type UnitData } from "yeoldeconverter";
+  import currencyData from "yeoldeconverter/data/currencies.slim.json" with { type: "json" };
+  import unitData from "yeoldeconverter/data/units.slim.json" with { type: "json" };
+
+  // JSON imports are typed loosely (strings rather than literal unions), hence the casts
+  const currencies = new CurrencyLibrary(currencyData as CurrencyData);
+  const units = new UnitLibrary(unitData as UnitData);
+  ```
+
+- **Identical results:** conversions match the full data exactly. Results' `sources` are empty, and descriptive fields such as notes are absent. A test checks every data point and unit against the full files.
+- **Regenerating:** they are rewritten whenever `currencies.json` or `units.json` is rebuilt, so they can't drift out of date.
 
 ### Example page
 
@@ -99,6 +129,7 @@ units.get("talent", { system: "Greek" });
 - **Currency values between data points** are interpolated linearly in log space, and the confidence used is the worse of the two neighbouring points. Years outside a currency's data throw a `RangeError`, unless you pass `{ outOfRange: "clamp" }` to use the nearest point.
 - **Ranges:** `low`/`high` on conversions combine the uncertainty of both ends (for example the source's low against the target's high). Every result keeps the underlying data points and their sources, so a UI can show them.
 - **`parseAmount`** reads £sd notation (`£3 4s 6d`, `3l. 4s. 6d.`), spelled-out sums (`5 shillings and 6 pence`, `2 guineas`), thousands separators and ½/¼/¾. It does not read amounts written as words ("thirty pounds").
+- **Fictional currencies** are timeless: `valueAt` returns the same estimate for any year, and every coin is always in use. For a fictional currency with no real-world value, `hasValue` returns false and `valueAt`/`convert` throw a `RangeError`. When a name matches both a real and a fictional currency ("dollar"), the real one wins.
 - **Your own data:** `currencies` and `units` come preloaded with the bundled JSON. You can also construct `new CurrencyLibrary(data)` or `new UnitLibrary(data)` with other data.
 
 ## Currencies covered
@@ -115,6 +146,13 @@ units.get("talent", { system: "Greek" });
 | Asia | Ryō (1605–1865), yen (1870–2025), Chinese silver tael (1650–1930), renminbi (1955–2025), Indian rupee (1600–2025) |
 | Ottoman | Akçe (1330–1685), kuruş/piastre (1690–1910) |
 | Antiquity | Roman denarius, Late Roman/Byzantine solidus, Athenian drachma, shekel |
+| Fictional | Dungeons & Dragons coins, Westerosi coins (*A Song of Ice and Fire*), Galactic credit and Hutt coins (*Star Wars*), gold-pressed latinum (*Star Trek*), Ankh-Morpork dollar (Discworld), Triganic Pu (*The Hitchhiker's Guide to the Galaxy*) |
+
+**Fictional currencies** carry `fictional: true`, a `work`, and currency-level `sources` for their exchange rates. They have no history, so the year is ignored.
+
+- **D&D and the Ankh-Morpork dollar** have a single rough dollar estimate, worked out from in-world prices and wages. A D&D gold piece is about $250, from the SRD's prices and its labourer's and artisan's day wages. An Ankh-Morpork dollar is about $100, based on a senior official's $20 a week in *Going Postal*. Both are rated very low confidence.
+- **The others** say too little about prices to justify a figure, so they have no dollar value at all. The library and example page still convert between their coins (a bar of latinum is 20 strips or 2,000 slips).
+- **Exchange-rate sources are of mixed standing.** Westerosi rates come from the licensed roleplaying game, not the novels. Hutt coin rates are Star Wars Legends material.
 
 ## How values are derived
 
@@ -233,11 +271,22 @@ Used for coin weights, fineness, legal parities and denomination structures. The
 | [Ancient Greek coinage](https://en.wikipedia.org/wiki/Ancient_Greek_coinage) | Obol/drachma/mina/talent |
 | [Shekel](https://en.wikipedia.org/wiki/Shekel) | Shekel weights and units |
 
+### Fictional currencies
+
+| Currency | Sources |
+|---|---|
+| Dungeons & Dragons | [D&D 5th Edition SRD 5.1](https://media.wizards.com/2016/downloads/DND/SRD-OGL_V5.1.pdf): coin rates; "a silver piece buys a laborer's work for half a day"; a skilled artisan earns 1 gp a day |
+| Westerosi coins | [A Wiki of Ice and Fire, "Coin"](https://awoiaf.westeros.org/index.php/Coin): 1 dragon = 30 moons = 210 stags = 1,470 stars = 2,940 groats = 11,760 pennies (from the roleplaying game) |
+| Galactic credit, Hutt coins | Wookieepedia (Legends) via archivum.wiki: [wupiupi](https://starwars.archivum.wiki/article/wupiupi), [trugut](https://starwars.archivum.wiki/article/Trugut), [peggat](https://starwars.archivum.wiki/article/Peggat) |
+| Gold-pressed latinum | [StarTrek.com, "Star Trek 101: Latinum"](https://www.startrek.com/news/star-trek-101-latinum); [Star Trek Online Wiki, "Latinum"](https://sto.fandom.com/wiki/Latinum): 100 slips = 1 strip, 20 strips = 1 bar |
+| Ankh-Morpork dollar | [L-Space Web wiki, "Currency"](https://wiki.lspace.org/Currency): 20 shillings of 12 pence, down to mites and elims; wages from *Going Postal* and *Guards! Guards!* |
+| Triganic Pu | Douglas Adams, [*The Hitch Hiker's Guide to the Galaxy*](https://openlibrary.org/books/OL7506950M/The_Hitch_Hiker%27s_Guide_to_the_Galaxy); [quotation of the passage](https://coppercoins.com/forum/viewtopic.php?p=11292): eight Ningis to the Pu |
+
 ---
 
 ## Units of measurement
 
-`data/units.json` holds 341 units of measurement: 105 of length, 45 of area, 95 of volume, 85 of mass and 11 counting units. They come from these systems:
+`data/units.json` holds 364 units of measurement: 123 of length, 46 of area, 97 of volume, 87 of mass and 11 counting units. They come from these systems:
 
 | System | Examples |
 |---|---|
@@ -251,6 +300,13 @@ Used for coin weights, fineness, legal parities and denomination structures. The
 | Roman, Greek, Persian | Pes, passus, Roman mile, jugerum, amphora, modius, libra; pous, stadion, medimnos, metretes, talent; parasang |
 | Egyptian, Mesopotamian, biblical | Royal cubit, khet, setat, deben; kuš, shekel, mina, talent; cubit, reed, Sabbath day's journey, bath, ephah, homer, hin, gerah |
 | Counting | Dozen, baker's dozen, score, long hundred, gross, great gross, quire, ream |
+| Astronomical | Astronomical unit, light-year, parsec, kiloparsec, megaparsec |
+| Atomic | Ångström (10⁻¹⁰ m) |
+| Planck | Planck length, area, volume and mass (CODATA values, measured to about 1 part in 100,000) |
+| Novelty | Smoot (5 ft 7 in; the Harvard Bridge is 364.4 smoots) |
+| Fictional | Lilliputian drurr, glumgluff and blustrug (*Gulliver's Travels*); Númenórean ranga, man-high and lár (Tolkien); Klingon 'uj, 'uj'a', kellicam, loghqam, cheb and tlho'ren (*Star Trek*) |
+
+Fictional units carry `fictional: true` and a `work` naming the source. Their values are what the author (or official reference material) states, usually only "about", so none is marked exact.
 
 ### How unit values are derived
 
@@ -307,3 +363,30 @@ Each article cites the primary metrological literature behind it.
 | [Ancient Egyptian units](https://en.wikipedia.org/wiki/Ancient_Egyptian_units_of_measurement), [Ancient Mesopotamian units](https://en.wikipedia.org/wiki/Ancient_Mesopotamian_units_of_measurement) | Egyptian and Mesopotamian units |
 | [Biblical and Talmudic units](https://en.wikipedia.org/wiki/Biblical_and_Talmudic_units_of_measurement), [Shekel](https://en.wikipedia.org/wiki/Shekel) | Biblical units |
 | [Dozen](https://en.wikipedia.org/wiki/Dozen), [Gross](https://en.wikipedia.org/wiki/Gross_(unit)), [Long hundred](https://en.wikipedia.org/wiki/Long_hundred), [Ream](https://en.wikipedia.org/wiki/Ream) | Counting units |
+
+**Astronomical units**
+
+- [Astronomical unit](https://en.wikipedia.org/wiki/Astronomical_unit), [Light-year](https://en.wikipedia.org/wiki/Light-year), [Parsec](https://en.wikipedia.org/wiki/Parsec). The au is exactly 149,597,870,700 m (IAU 2012 Resolution B2). The light-year uses the Julian year.
+- [IAU resolutions](https://www.iau.org/Iau/Publications/List-of-Resolutions) and [Mamajek et al., IAU 2015 Resolution B2](https://arxiv.org/abs/1510.06262), which defines the parsec as exactly 648,000/π au.
+
+**Ångström**
+
+- [Angstrom](https://en.wikipedia.org/wiki/Angstrom) (Wikipedia): exactly 10⁻¹⁰ m.
+
+**Planck units**
+
+- NIST CODATA recommended values for the [Planck length](https://physics.nist.gov/cgi-bin/cuu/Value?plkl) and [Planck mass](https://physics.nist.gov/cgi-bin/cuu/Value?plkm); [Planck units](https://en.wikipedia.org/wiki/Planck_units) (Wikipedia). The area and volume are the square and cube of the length.
+
+**Novelty units**
+
+- [Smoot](https://en.wikipedia.org/wiki/Smoot). Oliver R. Smoot's height, 5 ft 7 in, used to measure the Harvard Bridge in 1958.
+
+**Fictional units**
+
+- Jonathan Swift, [*Gulliver's Travels*](https://www.gutenberg.org/ebooks/829), Part I:
+  - a drurr is "about the fourteenth part of an inch";
+  - 70 glumgluffs are "about six feet";
+  - 5,000 blustrugs are "about twelve miles".
+- [Tolkien Gateway, "Ranga"](https://tolkiengateway.net/wiki/Ranga) and ["Lár"](https://tolkiengateway.net/wiki/L%C3%A1r). These summarise *Unfinished Tales*, which gives the ranga as about 38 inches and the lár as 5,000 rangar.
+- Klingon Language Institute list archives ([2009](https://kli.org/tlhIngan-Hol/2009/August/msg00008.html), [1998](https://kli.org/tlhIngan-Hol/1998/June/msg00562.html)). These collect Marc Okrand's values: the 'uj is about 35 cm, the cheb about 2.25 kg, the loghqam 1.25 light-years, and the tlho'ren is "in the quart/liter range".
+- [Ex Astris Scientia, Treknology Encyclopedia](https://www.ex-astris-scientia.org/treknology/treknology-k.htm). It explains why the kellicam's "about 2 km" is only an estimate.

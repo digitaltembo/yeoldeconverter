@@ -8,6 +8,7 @@ test("lookup by id, name, alias and plural", () => {
   assert.equal(C.get("gbp").id, "gbp");
   assert.equal(C.get("sterling").id, "gbp");
   assert.equal(C.get("dollars").id, "usd");
+  assert.equal(C.get("Ankh-Morpork dollar").id, "ankh_morpork");
   assert.equal(C.get("Venetian ducat (zecchino)").id, "ducat_ve");
   assert.throws(() => C.get("franc"), AmbiguousError);
   assert.throws(() => C.get("zorkmid"), NotFoundError);
@@ -99,8 +100,27 @@ test("breakdown and formatLsd", () => {
   assert.equal(CurrencyLibrary.formatLsd(1 / 480), "£0 0s 0½d");
 });
 
+test("fictional currencies: timeless values, denominations without a value", () => {
+  const gp = C.toUSD2025(1, { currency: "dnd", year: 1300, denomination: "gp" });
+  assert.equal(gp.amount, C.toUSD2025(1, { currency: "dnd", year: 2020, denomination: "gp" }).amount);
+  close(C.parseAmount("3 gp 5 sp 2 cp", "dnd", 0).base, 3.52);
+  close(C.denominationValue("latinum", "strip", 2370), 1 / 20);
+  close(C.describeDenomination("latinum", "bar", 2370).equivalents.find((e) => e.denomination.id === "slip")!.count, 2000);
+  close(C.parseAmount("1 dollar 2 shillings and 6 pence", "ankh_morpork", 1990).base, 1.125);
+  assert.equal(C.hasValue("triganic_pu"), false);
+  assert.throws(() => C.valueAt("triganic_pu", 2000), RangeError);
+  assert.equal(C.describeDenomination("westeros", "stag", 298).usd2025, undefined);
+  close(C.describeDenomination("westeros", "dragon", 298).equivalents.find((e) => e.denomination.id === "stag")!.count, 210);
+  assert.ok(C.search("star wars").some((c) => c.id === "sw_credit"));
+});
+
 test("every currency's data is usable", () => {
   for (const c of C.list()) {
+    if (!C.hasValue(c)) {
+      assert.ok(c.fictional && c.sources!.length > 0, c.id);
+      for (const d of c.denominations) assert.ok(C.denominationValue(c, d, 0) > 0, `${c.id}:${d.id}`);
+      continue;
+    }
     const [first, last] = C.coverage(c);
     assert.ok(first <= last, c.id);
     for (const p of c.series) assert.ok(p.low <= p.usd2025 && p.usd2025 <= p.high && p.sources.length > 0, `${c.id} ${p.year}`);

@@ -13,7 +13,7 @@ test("lookup by id, name, alias and plural; exact names win", () => {
   assert.equal(U.get("furlong").id, "furlong");
   assert.throws(() => U.get("cubit"), AmbiguousError);
   assert.throws(() => U.get("gallon"), AmbiguousError);
-  assert.throws(() => U.get("parsec"), NotFoundError);
+  assert.throws(() => U.get("zorkmid"), NotFoundError);
   assert.equal(U.get("talent", { system: "Greek" }).id, "talent_att");
 });
 
@@ -50,6 +50,27 @@ test("search and equivalents", () => {
   assert.ok(U.search("roman", { category: "length" }).some((u) => u.id === "pes"));
   const eq = U.equivalents(1, "mile", ["furlong", "chain", "yard"]);
   assert.deepEqual(eq.map((e) => e.value), [8, 80, 1760]);
+});
+
+test("astronomical, atomic, novelty and Planck units", () => {
+  close(U.convert(1, "parsec", "au").value, 648000 / Math.PI);
+  close(U.convert(1, "parsec", "light_year").value, 3.26156, 1e-5);
+  close(U.convert(1, "loghqam", "light_year").value, 1.25);
+  close(U.convert(364.4, "smoot", "metre").value, 620.14, 1e-4);
+  assert.equal(U.get("angstroms").id, "angstrom");
+  assert.equal(U.get("Å").id, "angstrom");
+  close(U.convert(5000, "angstrom", "metre").value, 5e-7);
+  close(U.convert(1, "planck_area", "sq_metre").value, 1.616255e-35 ** 2, 1e-12);
+  close(U.convert(1, "planck_mass", "kilogram").value, 2.176434e-8);
+  assert.equal(U.get("parsecs").precision, "exact");
+});
+
+test("fictional units", () => {
+  close(U.convert(70, "glumgluff", "foot").value, 6);
+  close(U.convert(1, "lar", "yard").value, 190000 / 36);
+  assert.equal(U.get("kellicam").precision, "uncertain");
+  assert.ok(U.search("tolkien").some((u) => u.id === "ranga"));
+  assert.ok(U.list().filter((u) => u.fictional).every((u) => u.work && u.precision !== "exact"));
 });
 
 test("every unit resolves and has sources", () => {

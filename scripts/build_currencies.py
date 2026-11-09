@@ -132,6 +132,25 @@ SRC = {
                   "https://avalon.law.yale.edu/ancient/hamframe.asp"),
     "usda_ers": ("For modern comparison prices of grain/flour/bread: US Bureau of Labor Statistics, Average Price Data (CPI-AP)",
                  "https://www.bls.gov/cpi/factsheets/average-prices.htm"),
+    "srd51": ("Wizards of the Coast, D&D 5th Edition System Reference Document 5.1 — 'Coins' and 'Selling Treasure' (coin rates; "
+              "'a silver piece buys a laborer's work for half a day'; artisan earns 1 gp/day; 50 coins weigh a pound)",
+              "https://media.wizards.com/2016/downloads/DND/SRD-OGL_V5.1.pdf"),
+    "awoiaf_coin": ("A Wiki of Ice and Fire, 'Coin' — Westerosi denominations; exchange table from Green Ronin's "
+                    "'A Song of Ice and Fire Roleplaying' (semi-canon; not stated in the novels)", "https://awoiaf.westeros.org/index.php/Coin"),
+    "sw_wupiupi": ("Wookieepedia (Legends, mirrored at archivum.wiki), 'Wupiupi' — ≈ 0.625 credits; 16 wupiupi = 1 trugut",
+                   "https://starwars.archivum.wiki/article/wupiupi"),
+    "sw_trugut": ("Wookieepedia (Legends, mirrored at archivum.wiki), 'Trugut' — 10 credits or 16 wupiupi", "https://starwars.archivum.wiki/article/Trugut"),
+    "sw_peggat": ("Wookieepedia (Legends, mirrored at archivum.wiki), 'Peggat' — 4 truguts, 64 wupiupi, ≈ 40 credits",
+                  "https://starwars.archivum.wiki/article/Peggat"),
+    "st_latinum": ("StarTrek.com, 'Star Trek 101: Latinum' — gold-pressed latinum comes in slips, strips, bars and bricks",
+                   "https://www.startrek.com/news/star-trek-101-latinum"),
+    "sto_latinum": ("Star Trek Online Wiki, 'Latinum' — 100 slips = 1 strip; 20 strips = 1 bar; bar-to-brick rate unknown",
+                    "https://sto.fandom.com/wiki/Latinum"),
+    "lspace_currency": ("The L-Space Web wiki, 'Currency' — Ankh-Morpork dollar = 20 shillings; shilling = 12 pence; down to mites "
+                        "and elims; 'Going Postal': a senior official earns $20 a week", "https://wiki.lspace.org/Currency"),
+    "hhgg_book": ("Douglas Adams, 'The Hitch Hiker's Guide to the Galaxy' (1979) — Open Library record", "https://openlibrary.org/books/OL7506950M/The_Hitch_Hiker%27s_Guide_to_the_Galaxy"),
+    "hhgg_quote": ("Forum quotation of the Guide's passage on the Triganic Pu (eight Ningis to one Pu; the Ningi a triangular rubber "
+                   "coin 6,800 miles along each side)", "https://coppercoins.com/forum/viewtopic.php?p=11292"),
     "bls_wage": ("For modern comparison wages: US Bureau of Labor Statistics, Occupational Employment and Wage Statistics",
                  "https://www.bls.gov/oes/"),
 }
@@ -349,9 +368,12 @@ def den(id_, name, value=None, periods=None, symbol=None, valid=None, notes=None
 CURRENCIES = []
 
 
-def currency(id_, name, region, era, base, denominations, series, notes, successor=None, aliases=None):
+def currency(id_, name, region, era, base, denominations, series, notes, successor=None, aliases=None, work=None):
     c = {"id": id_, "name": name, "region": region, "era": era, "baseUnit": base,
          "aliases": aliases or [], "notes": notes, "denominations": denominations, "series": series}
+    if work:
+        c["fictional"] = True
+        c["work"] = work
     if successor:
         c["successor"] = successor
     CURRENCIES.append(c)
@@ -1135,6 +1157,101 @@ currency("shekel", "Shekel (ancient Near East / biblical)", "Mesopotamia, Israel
     den("thirty_pieces", "Thirty pieces of silver", 30, notes="Matthew 26:15 — usually taken as 30 Tyrian shekels."),
 ], shk_series, "The shekel was a weight of silver long before it was a coin; values are only indicative.")
 
+# ============================================================ FICTIONAL
+# Fictional currencies carry no year-based series. Where the work gives enough to estimate a real-world value
+# (prices or wages), a single undated estimate is stored as a one-point series; otherwise the series is empty.
+def fictional_point(year, usd, low, high, sources, method):
+    return point(year, usd, "very low", sources, method, low=low, high=high, provenance="compiled")
+
+
+dnd_series = [fictional_point(2014, 250, 100, 600, [
+    src("srd51", "1 gp = 10 sp = 100 cp; 'a silver piece buys a laborer's work for half a day, a flask of lamp oil, or a night's "
+                 "rest in a poor inn'; 'a single copper piece buys a candle, a torch, or a piece of chalk'; a skilled artisan "
+                 "earns 1 gp a day."),
+    src("usda_ers", "Goods basis: a candle or torch (1 cp) ≈ $1-2 and a cheap night's lodging (1 sp) ≈ $20-40 today put 1 gp at "
+                    "≈ $100-400."),
+    src("bls_wage", "Wage basis: an unskilled day (2 sp) ≈ $120 → 1 gp ≈ $600; a skilled artisan's day (1 gp) ≈ $250. "
+                    "Central estimate $250, range $100 (goods) to $600 (unskilled wages).")],
+    "in-world prices and wages → modern equivalents")]
+currency("dnd", "Dungeons & Dragons coinage", "Dungeons & Dragons (5th edition rules)", [1974, None], "gold piece", [
+    den("gp", "Gold piece", 1, symbol="gp", aliases=["gold", "gold coin"]),
+    den("pp", "Platinum piece", 10, symbol="pp", aliases=["platinum"]),
+    den("ep", "Electrum piece", 0.5, symbol="ep", aliases=["electrum"]),
+    den("sp", "Silver piece", 0.1, symbol="sp", aliases=["silver"]),
+    den("cp", "Copper piece", 0.01, symbol="cp", aliases=["copper"]),
+], dnd_series, "Rates from the 5th-edition SRD (earlier editions differ: e.g. 1st edition had 20 sp to the gp). "
+               "The dollar value is a rough estimate from in-world prices and wages, not an official figure.",
+         work="Dungeons & Dragons (TSR / Wizards of the Coast, 1974–)")
+
+currency("westeros", "Westerosi coinage", "Westeros (A Song of Ice and Fire / Game of Thrones)", [1996, None], "gold dragon", [
+    den("dragon", "Gold dragon", 1, aliases=["dragon", "golden dragon"]),
+    den("moon", "Silver moon", 1 / 30, aliases=["moon"], notes="Only in the roleplaying game, not the novels."),
+    den("stag", "Silver stag", 1 / 210, aliases=["stag"]),
+    den("star", "Copper star", 1 / 1470, aliases=["star"]),
+    den("half_groat", "Half-groat", 1 / 5880),
+    den("groat", "Groat", 1 / 2940),
+    den("penny", "Copper penny", 1 / 11760, aliases=["penny", "pennies"]),
+    den("halfpenny", "Halfpenny", 1 / 23520),
+], [], "Rates are not given in George R. R. Martin's novels; they come from the licensed roleplaying game and are "
+       "semi-canon (the game's authors call them a rule of thumb). No real-world value is established.",
+         work="A Song of Ice and Fire (George R. R. Martin, 1996–)")
+
+currency("sw_credit", "Galactic credit (with Hutt coinage)", "Star Wars galaxy", [1977, None], "credit", [
+    den("credit", "Credit", 1, aliases=["Galactic credit", "Republic credit", "Imperial credit", "Republic dataries", "cred"]),
+    den("wupiupi", "Wupiupi", 0.625, notes="Small Hutt coin used on Tatooine (Legends)."),
+    den("trugut", "Trugut", 10, notes="16 wupiupi (Legends)."),
+    den("peggat", "Peggat", 40, notes="4 truguts, 64 wupiupi (Legends). Watto deals in Hutt money in The Phantom Menace."),
+], [], "Hutt-coin rates are from Legends-era sources (the Expanded Universe), not the current canon. No real-world value is established.",
+         work="Star Wars (Lucasfilm, 1977–)")
+
+currency("latinum", "Gold-pressed latinum", "Star Trek (Ferengi Alliance and beyond)", [1993, None], "bar", [
+    den("bar", "Bar", 1, aliases=["bar of latinum"]),
+    den("strip", "Strip", 1 / 20, aliases=["strip of latinum"]),
+    den("slip", "Slip", 1 / 2000, aliases=["slip of latinum"]),
+], [], "Liquid latinum suspended in worthless gold, since gold can be replicated. 100 slips = 1 strip, 20 strips = 1 bar "
+       "(Deep Space Nine). Bricks are larger than bars, but the bar-to-brick rate has never been stated. The Federation itself "
+       "is said to have no money. No real-world value is established.",
+         work="Star Trek (Paramount, Deep Space Nine 1993–1999)")
+
+currency("ankh_morpork", "Ankh-Morpork dollar", "Discworld (Terry Pratchett)", [1983, None], "dollar", [
+    den("dollar", "Dollar", 1, symbol="$AM", aliases=["AM$", "Ankh-Morpork dollar"]),
+    den("guinea", "Guinea", 21 / 20, notes="21 shillings; 'falling from use'."),
+    den("crown", "Crown", 0.25), den("half_crown", "Half-crown", 0.125),
+    den("shilling", "Shilling", 1 / 20), den("sixpence", "Sixpence", 1 / 40),
+    den("groat", "Groat", 1 / 60, notes="4 pence — the Assassins' fee for killing Foul Ole Ron."),
+    den("thruppence", "Thruppeny bit", 1 / 80), den("penny", "Penny", 1 / 240, aliases=["pence"]),
+    den("halfpenny", "Halfpenny", 1 / 480), den("farthing", "Farthing", 1 / 960),
+    den("mite", "Mite", 1 / 1920, notes="Costs sixpence to make, 'on account of being so small and having the hole in the middle' (Making Money)."),
+    den("elim", "Elim", 1 / 3840, notes="Costs a shilling to make (Making Money)."),
+], [fictional_point(2004, 100, 50, 170, [
+    src("lspace_currency", "Going Postal: a senior government official earns $20 a week; Guards! Guards!: five extra dollars a month "
+                           "is a respectable raise. The dollar is 20 shillings of 12 pence."),
+    src("bls_wage", "Wage basis: a senior official's modern weekly pay of roughly $2,000-3,300 ÷ $20 → ≈ $100-165 per dollar; "
+                    "a 'respectable raise' of $5/month vs a modern raise of a few hundred dollars suggests ≈ $50-60. "
+                    "Central estimate $100.")],
+    "in-world wages → modern equivalents")],
+    "The L-Space wiki gives the £sd-style system used here; some fan sources treat the dollar as 100 pence, and the books "
+    "are not fully consistent. The famously debased dollar is 'theoretically gold' but contains less gold than sea water.",
+         work="Discworld (Terry Pratchett, 1983–2015)")
+
+currency("triganic_pu", "Triganic Pu", "The Hitchhiker's Guide to the Galaxy", [1978, None], "Pu", [
+    den("pu", "Pu", 1, aliases=["Triganic Pu"]),
+    den("ningi", "Ningi", 1 / 8, notes="A triangular rubber coin 6,800 miles along each side — so no one has ever collected enough to own one Pu."),
+], [], "Eight Ningis to one Pu. The Guide adds that Ningis are not negotiable currency, because the Galactibanks refuse to "
+       "deal in fiddling small change. No real-world value is established.",
+         work="The Hitchhiker's Guide to the Galaxy (Douglas Adams, 1978–)")
+
+# per-source citations for fictional currencies without a value series
+FICTION_SOURCES = {
+    "westeros": ["awoiaf_coin"], "sw_credit": ["sw_wupiupi", "sw_trugut", "sw_peggat"],
+    "latinum": ["st_latinum", "sto_latinum"], "triganic_pu": ["hhgg_book", "hhgg_quote"],
+    "dnd": ["srd51"], "ankh_morpork": ["lspace_currency"],
+}
+for c in CURRENCIES:
+    if c.get("fictional"):
+        c["sources"] = [{"title": SRC[k][0], "url": SRC[k][1],
+                         "reasoning": "Source for the denominations and their exchange rates."} for k in FICTION_SOURCES[c["id"]]]
+
 # ============================================================ assemble
 cur_ids = {c["id"] for c in CURRENCIES}
 for c in CURRENCIES:
@@ -1176,6 +1293,10 @@ doc = {
             "compiled": "Uses an exchange rate, parity, or estimate entered by hand from the cited reference; verify against the source before relying on it.",
         },
         "interpolation": "Between data points, interpolate linearly in log(usd2025). Do not extrapolate beyond a currency's first or last point.",
+        "fictional": ("Currencies with 'fictional': true come from novels, films and games ('work' names the source). Their "
+                      "'series' is empty when no real-world value can be justified, or holds a single undated estimate "
+                      "(stored at the year of the cited work) derived from in-world prices and wages. 'sources' at the "
+                      "currency level cite the exchange rates between denominations."),
         "denominations": ("Each denomination's 'value' is in base units of its currency. When 'periods' is present, use the period "
                           "containing the year (inclusive bounds). Years are astronomical-ish integers; negative = BCE."),
     },
@@ -1184,3 +1305,25 @@ doc = {
 json.dump(doc, open(out_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 n = sum(len(c["series"]) for c in CURRENCIES)
 print(f"{len(CURRENCIES)} currencies, {n} data points")
+
+# ------------------------------------------------------------ slim copy
+# Only what lookups and conversions need: no sources, reasoning, methods or notes. Same shape, fields omitted.
+SLIM_CURRENCY = ["id", "name", "region", "era", "baseUnit", "aliases", "denominations", "series", "successor", "fictional", "work"]
+SLIM_DENOMINATION = ["id", "name", "symbol", "value", "periods", "validFrom", "validTo", "aliases"]
+SLIM_POINT = ["year", "usd2025", "low", "high", "confidence"]
+
+
+def pick(d, keys):
+    return {k: d[k] for k in keys if k in d}
+
+
+slim = {k: doc[k] for k in ("schemaVersion", "title", "baseYear", "unit", "generated")}
+slim["slim"] = True
+slim["currencies"] = [
+    {**pick(c, SLIM_CURRENCY),
+     "denominations": [pick(d, SLIM_DENOMINATION) for d in c["denominations"]],
+     "series": [pick(p, SLIM_POINT) for p in c["series"]]}
+    for c in CURRENCIES]
+slim_path = out_path[:-5] + ".slim.json" if out_path.endswith(".json") else out_path + ".slim"
+json.dump(slim, open(slim_path, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+print(f"slim copy: {slim_path}")

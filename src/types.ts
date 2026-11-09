@@ -1,4 +1,5 @@
 // Shapes of data/currencies.json and data/units.json.
+// The slim files (*.slim.json) have the same shape with the descriptive fields marked "omitted in slim data" left out.
 
 export interface Source {
   title: string;
@@ -27,6 +28,7 @@ export interface Denomination {
   validFrom?: number;
   validTo?: number;
   aliases?: string[];
+  /** Omitted in slim data. */
   notes?: string;
 }
 
@@ -36,9 +38,12 @@ export interface DataPoint {
   low: number;
   high: number;
   confidence: Confidence;
-  method: string;
-  provenance: "computed" | "compiled";
-  sources: Source[];
+  /** Omitted in slim data. */
+  method?: string;
+  /** Omitted in slim data. */
+  provenance?: "computed" | "compiled";
+  /** Omitted in slim data. */
+  sources?: Source[];
 }
 
 export interface Currency {
@@ -49,10 +54,18 @@ export interface Currency {
   era: [number, number | null];
   baseUnit: string;
   aliases: string[];
-  notes: string;
+  /** Omitted in slim data. */
+  notes?: string;
   denominations: Denomination[];
+  /** Value of one base unit over time. Empty for fictional currencies with no defensible real-world value. */
   series: DataPoint[];
   successor?: string;
+  /** True for currencies from novels, films and games; their value (if any) does not depend on the year. */
+  fictional?: boolean;
+  /** The work a fictional currency comes from. */
+  work?: string;
+  /** Sources for a fictional currency's denominations and exchange rates. Omitted in slim data. */
+  sources?: Source[];
 }
 
 export interface CurrencyData {
@@ -61,7 +74,10 @@ export interface CurrencyData {
   baseYear: number;
   unit: string;
   generated: string;
-  methodology: Record<string, unknown>;
+  /** True for the slim file. */
+  slim?: boolean;
+  /** Omitted in slim data. */
+  methodology?: Record<string, unknown>;
   currencies: Currency[];
 }
 
@@ -82,25 +98,37 @@ export interface Unit {
   category: UnitCategory;
   subcategory?: "liquid" | "dry";
   system: string;
-  region: string;
-  era: [number | null, number | null];
+  /** Omitted in slim data. */
+  region?: string;
+  /** Omitted in slim data. */
+  era?: [number | null, number | null];
   aliases: string[];
   /** Value in the category's base unit (m, m², L, kg, each). */
   si: number;
-  siUnit: string;
+  /** Omitted in slim data (it is `baseUnits[category]`). */
+  siUnit?: string;
   precision: Precision;
   low?: number;
   high?: number;
   definition: UnitDefinition;
+  /** Omitted in slim data. */
   notes?: string;
-  sources: Source[];
+  /** Omitted in slim data. */
+  sources?: Source[];
+  /** True for units from novels and films. */
+  fictional?: boolean;
+  /** The work a fictional unit comes from. Omitted in slim data. */
+  work?: string;
 }
 
 export interface UnitData {
   schemaVersion: number;
   title: string;
   generated: string;
+  /** True for the slim file. */
+  slim?: boolean;
   baseUnits: Record<UnitCategory, string>;
-  notes: string[];
+  /** Omitted in slim data. */
+  notes?: string[];
   units: Unit[];
 }

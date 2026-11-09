@@ -111,20 +111,21 @@ export class CurrencyLibrary {
     return exact ? [exact] : lookup(this.index, query);
   }
 
-  /** Exactly one currency by id, name or alias; throws NotFoundError / AmbiguousError. */
+  /** Exactly one currency by id, name or alias (real currencies win over fictional ones); throws NotFoundError / AmbiguousError. */
   get(query: string | Currency): Currency {
     if (typeof query !== "string") return query;
-    const found = preferExact(this.find(query), query, (c) => [c.id, c.name, c.baseUnit, ...c.aliases]);
+    let found = preferExact(this.find(query), query, (c) => [c.id, c.name, c.baseUnit, ...c.aliases]);
+    if (found.length > 1 && found.some((c) => !c.fictional)) found = found.filter((c) => !c.fictional);
     if (found.length === 0) throw new NotFoundError("currency", query);
     if (found.length > 1) throw new AmbiguousError("currency", query, found.map((c) => c.id));
     return found[0]!;
   }
 
-  /** Free-text search over currency names, aliases, regions and denomination names. */
+  /** Free-text search over currency names, aliases, regions, source works and denomination names. */
   search(text: string): Currency[] {
     const q = normalize(text);
     return this.data.currencies.filter((c) =>
-      [c.id, c.name, c.region, c.baseUnit, ...c.aliases, ...c.denominations.flatMap((d) => [d.name, ...(d.aliases ?? [])])]
+      [c.id, c.name, c.region, c.baseUnit, c.work ?? "", ...c.aliases, ...c.denominations.flatMap((d) => [d.name, ...(d.aliases ?? [])])]
         .some((s) => normalize(s).includes(q)),
     );
   }
@@ -194,13 +195,21 @@ export class CurrencyLibrary {
     if (d.validFrom !== undefined && year < d.validFrom) return false;
     if (d.validTo !== undefined && year > d.validTo) return false;
     if (d.periods && !d.periods.some((p) => p.from <= year && year <= p.to)) return false;
+    if (c.fictional) return true;
     const [from, to] = c.era;
     return year >= from - 50 && (to === null || year <= to + 50);
   }
 
-  /** First and last year with data. */
+  /** Whether the currency has a real-world (2025 USD) value. False for some fictional currencies. */
+  hasValue(currency: string | Currency): boolean {
+    return this.get(currency).series.length > 0;
+  }
+
+  /** First and last year with data. Throws RangeError for a currency with no real-world value. */
   coverage(currency: string | Currency): [number, number] {
-    const s = this.get(currency).series;
+    const c = this.get(currency);
+    const s = c.series;
+    if (s.length === 0) throw noValue(c);
     return [s[0]!.year, s[s.length - 1]!.year];
   }
 
@@ -210,12 +219,15 @@ export class CurrencyLibrary {
   valueAt(currency: string | Currency, year: number, options: ValueOptions = {}): CurrencyValue {
     const c = this.get(currency);
     const s = c.series;
+    if (s.length === 0) throw noValue(c);
     const first = s[0]!;
     const last = s[s.length - 1]!;
     const make = (p: DataPoint, clamped: boolean): CurrencyValue => ({
       currency: c.id, year, usd2025: p.usd2025, low: p.low, high: p.high, confidence: p.confidence,
-      interpolated: false, clamped, points: [p], sources: p.sources,
+      interpolated: false, clamped, points: [p], sources: p.sources ?? [],
     });
+    // a fictional currency's single estimate is timeless
+    if (c.fictional) return make(first, false);
     if (year < first.year || year > last.year) {
       if (options.outOfRange !== "clamp") {
         throw new RangeError(`${c.name}: no data for ${year} (data covers ${first.year}–${last.year})`);
@@ -235,7 +247,7 @@ export class CurrencyLibrary {
       high: logLerp(a.high, b.high, t),
       confidence: worse(a.confidence, b.confidence),
       interpolated: true, clamped: false, points: [a, b],
-      sources: [...a.sources, ...b.sources],
+      sources: [...(a.sources ?? []), ...(b.sources ?? [])],
     };
   }
 
@@ -279,8 +291,8 @@ export class CurrencyLibrary {
       .filter((o) => o.id !== d.id && this.denominationInUse(c, o, year))
       .map((o) => ({ denomination: o, count: valueInBase / this.denominationValue(c, o, year) }));
     const info: DenominationInfo = { currency: c, denomination: d, year, valueInBase, inUse: this.denominationInUse(c, d, year), equivalents };
-    const [first, last] = this.coverage(c);
-    if (year >= first && year <= last) {
+    const covered = this.hasValue(c) && (c.fictional || (year >= this.coverage(c)[0] && year <= this.coverage(c)[1]));
+    if (covered) {
       const v = this.valueAt(c, year);
       info.usd2025 = { ...v, perDenomination: v.usd2025 * valueInBase, lowPerDenomination: v.low * valueInBase, highPerDenomination: v.high * valueInBase };
     }
@@ -372,4 +384,8 @@ function parseNumber(s: string): number {
   const last = t.slice(-1);
   if (last in fractions) return (t.length > 1 ? Number(t.slice(0, -1)) : 0) + fractions[last]!;
   return Number(t.replace(/,/g, ""));
+}
+
+function noValue(c: Currency): RangeError {
+  return new RangeError(`${c.name} has no established real-world value${c.work ? ` (${c.work})` : ""}`);
 }

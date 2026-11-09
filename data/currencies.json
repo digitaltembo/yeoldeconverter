@@ -24,6 +24,7 @@
    "compiled": "Uses an exchange rate, parity, or estimate entered by hand from the cited reference; verify against the source before relying on it."
   },
   "interpolation": "Between data points, interpolate linearly in log(usd2025). Do not extrapolate beyond a currency's first or last point.",
+  "fictional": "Currencies with 'fictional': true come from novels, films and games ('work' names the source). Their 'series' is empty when no real-world value can be justified, or holds a single undated estimate (stored at the year of the cited work) derived from in-world prices and wages. 'sources' at the currency level cite the exchange rates between denominations.",
   "denominations": "Each denomination's 'value' is in base units of its currency. When 'periods' is present, use the period containing the year (inclusive bounds). Years are astronomical-ish integers; negative = BCE."
  },
  "currencies": [
@@ -52003,6 +52004,468 @@
        "reasoning": "Goods basis follows the Roman denarius (≈ $30) × 4 ≈ $120."
       }
      ]
+    }
+   ]
+  },
+  {
+   "id": "dnd",
+   "name": "Dungeons & Dragons coinage",
+   "region": "Dungeons & Dragons (5th edition rules)",
+   "era": [
+    1974,
+    null
+   ],
+   "baseUnit": "gold piece",
+   "aliases": [],
+   "notes": "Rates from the 5th-edition SRD (earlier editions differ: e.g. 1st edition had 20 sp to the gp). The dollar value is a rough estimate from in-world prices and wages, not an official figure.",
+   "denominations": [
+    {
+     "id": "gp",
+     "name": "Gold piece",
+     "symbol": "gp",
+     "value": 1,
+     "aliases": [
+      "gold",
+      "gold coin"
+     ]
+    },
+    {
+     "id": "pp",
+     "name": "Platinum piece",
+     "symbol": "pp",
+     "value": 10,
+     "aliases": [
+      "platinum"
+     ]
+    },
+    {
+     "id": "ep",
+     "name": "Electrum piece",
+     "symbol": "ep",
+     "value": 0.5,
+     "aliases": [
+      "electrum"
+     ]
+    },
+    {
+     "id": "sp",
+     "name": "Silver piece",
+     "symbol": "sp",
+     "value": 0.1,
+     "aliases": [
+      "silver"
+     ]
+    },
+    {
+     "id": "cp",
+     "name": "Copper piece",
+     "symbol": "cp",
+     "value": 0.01,
+     "aliases": [
+      "copper"
+     ]
+    }
+   ],
+   "series": [
+    {
+     "year": 2014,
+     "usd2025": 250,
+     "low": 100,
+     "high": 600,
+     "confidence": "very low",
+     "method": "in-world prices and wages → modern equivalents",
+     "provenance": "compiled",
+     "sources": [
+      {
+       "title": "Wizards of the Coast, D&D 5th Edition System Reference Document 5.1 — 'Coins' and 'Selling Treasure' (coin rates; 'a silver piece buys a laborer's work for half a day'; artisan earns 1 gp/day; 50 coins weigh a pound)",
+       "url": "https://media.wizards.com/2016/downloads/DND/SRD-OGL_V5.1.pdf",
+       "reasoning": "1 gp = 10 sp = 100 cp; 'a silver piece buys a laborer's work for half a day, a flask of lamp oil, or a night's rest in a poor inn'; 'a single copper piece buys a candle, a torch, or a piece of chalk'; a skilled artisan earns 1 gp a day."
+      },
+      {
+       "title": "For modern comparison prices of grain/flour/bread: US Bureau of Labor Statistics, Average Price Data (CPI-AP)",
+       "url": "https://www.bls.gov/cpi/factsheets/average-prices.htm",
+       "reasoning": "Goods basis: a candle or torch (1 cp) ≈ $1-2 and a cheap night's lodging (1 sp) ≈ $20-40 today put 1 gp at ≈ $100-400."
+      },
+      {
+       "title": "For modern comparison wages: US Bureau of Labor Statistics, Occupational Employment and Wage Statistics",
+       "url": "https://www.bls.gov/oes/",
+       "reasoning": "Wage basis: an unskilled day (2 sp) ≈ $120 → 1 gp ≈ $600; a skilled artisan's day (1 gp) ≈ $250. Central estimate $250, range $100 (goods) to $600 (unskilled wages)."
+      }
+     ]
+    }
+   ],
+   "fictional": true,
+   "work": "Dungeons & Dragons (TSR / Wizards of the Coast, 1974–)",
+   "sources": [
+    {
+     "title": "Wizards of the Coast, D&D 5th Edition System Reference Document 5.1 — 'Coins' and 'Selling Treasure' (coin rates; 'a silver piece buys a laborer's work for half a day'; artisan earns 1 gp/day; 50 coins weigh a pound)",
+     "url": "https://media.wizards.com/2016/downloads/DND/SRD-OGL_V5.1.pdf",
+     "reasoning": "Source for the denominations and their exchange rates."
+    }
+   ]
+  },
+  {
+   "id": "westeros",
+   "name": "Westerosi coinage",
+   "region": "Westeros (A Song of Ice and Fire / Game of Thrones)",
+   "era": [
+    1996,
+    null
+   ],
+   "baseUnit": "gold dragon",
+   "aliases": [],
+   "notes": "Rates are not given in George R. R. Martin's novels; they come from the licensed roleplaying game and are semi-canon (the game's authors call them a rule of thumb). No real-world value is established.",
+   "denominations": [
+    {
+     "id": "dragon",
+     "name": "Gold dragon",
+     "value": 1,
+     "aliases": [
+      "dragon",
+      "golden dragon"
+     ]
+    },
+    {
+     "id": "moon",
+     "name": "Silver moon",
+     "value": 0.03333333333333333,
+     "aliases": [
+      "moon"
+     ],
+     "notes": "Only in the roleplaying game, not the novels."
+    },
+    {
+     "id": "stag",
+     "name": "Silver stag",
+     "value": 0.004761904761904762,
+     "aliases": [
+      "stag"
+     ]
+    },
+    {
+     "id": "star",
+     "name": "Copper star",
+     "value": 0.0006802721088435374,
+     "aliases": [
+      "star"
+     ]
+    },
+    {
+     "id": "half_groat",
+     "name": "Half-groat",
+     "value": 0.00017006802721088434
+    },
+    {
+     "id": "groat",
+     "name": "Groat",
+     "value": 0.0003401360544217687
+    },
+    {
+     "id": "penny",
+     "name": "Copper penny",
+     "value": 8.503401360544217e-05,
+     "aliases": [
+      "penny",
+      "pennies"
+     ]
+    },
+    {
+     "id": "halfpenny",
+     "name": "Halfpenny",
+     "value": 4.2517006802721085e-05
+    }
+   ],
+   "series": [],
+   "fictional": true,
+   "work": "A Song of Ice and Fire (George R. R. Martin, 1996–)",
+   "sources": [
+    {
+     "title": "A Wiki of Ice and Fire, 'Coin' — Westerosi denominations; exchange table from Green Ronin's 'A Song of Ice and Fire Roleplaying' (semi-canon; not stated in the novels)",
+     "url": "https://awoiaf.westeros.org/index.php/Coin",
+     "reasoning": "Source for the denominations and their exchange rates."
+    }
+   ]
+  },
+  {
+   "id": "sw_credit",
+   "name": "Galactic credit (with Hutt coinage)",
+   "region": "Star Wars galaxy",
+   "era": [
+    1977,
+    null
+   ],
+   "baseUnit": "credit",
+   "aliases": [],
+   "notes": "Hutt-coin rates are from Legends-era sources (the Expanded Universe), not the current canon. No real-world value is established.",
+   "denominations": [
+    {
+     "id": "credit",
+     "name": "Credit",
+     "value": 1,
+     "aliases": [
+      "Galactic credit",
+      "Republic credit",
+      "Imperial credit",
+      "Republic dataries",
+      "cred"
+     ]
+    },
+    {
+     "id": "wupiupi",
+     "name": "Wupiupi",
+     "value": 0.625,
+     "notes": "Small Hutt coin used on Tatooine (Legends)."
+    },
+    {
+     "id": "trugut",
+     "name": "Trugut",
+     "value": 10,
+     "notes": "16 wupiupi (Legends)."
+    },
+    {
+     "id": "peggat",
+     "name": "Peggat",
+     "value": 40,
+     "notes": "4 truguts, 64 wupiupi (Legends). Watto deals in Hutt money in The Phantom Menace."
+    }
+   ],
+   "series": [],
+   "fictional": true,
+   "work": "Star Wars (Lucasfilm, 1977–)",
+   "sources": [
+    {
+     "title": "Wookieepedia (Legends, mirrored at archivum.wiki), 'Wupiupi' — ≈ 0.625 credits; 16 wupiupi = 1 trugut",
+     "url": "https://starwars.archivum.wiki/article/wupiupi",
+     "reasoning": "Source for the denominations and their exchange rates."
+    },
+    {
+     "title": "Wookieepedia (Legends, mirrored at archivum.wiki), 'Trugut' — 10 credits or 16 wupiupi",
+     "url": "https://starwars.archivum.wiki/article/Trugut",
+     "reasoning": "Source for the denominations and their exchange rates."
+    },
+    {
+     "title": "Wookieepedia (Legends, mirrored at archivum.wiki), 'Peggat' — 4 truguts, 64 wupiupi, ≈ 40 credits",
+     "url": "https://starwars.archivum.wiki/article/Peggat",
+     "reasoning": "Source for the denominations and their exchange rates."
+    }
+   ]
+  },
+  {
+   "id": "latinum",
+   "name": "Gold-pressed latinum",
+   "region": "Star Trek (Ferengi Alliance and beyond)",
+   "era": [
+    1993,
+    null
+   ],
+   "baseUnit": "bar",
+   "aliases": [],
+   "notes": "Liquid latinum suspended in worthless gold, since gold can be replicated. 100 slips = 1 strip, 20 strips = 1 bar (Deep Space Nine). Bricks are larger than bars, but the bar-to-brick rate has never been stated. The Federation itself is said to have no money. No real-world value is established.",
+   "denominations": [
+    {
+     "id": "bar",
+     "name": "Bar",
+     "value": 1,
+     "aliases": [
+      "bar of latinum"
+     ]
+    },
+    {
+     "id": "strip",
+     "name": "Strip",
+     "value": 0.05,
+     "aliases": [
+      "strip of latinum"
+     ]
+    },
+    {
+     "id": "slip",
+     "name": "Slip",
+     "value": 0.0005,
+     "aliases": [
+      "slip of latinum"
+     ]
+    }
+   ],
+   "series": [],
+   "fictional": true,
+   "work": "Star Trek (Paramount, Deep Space Nine 1993–1999)",
+   "sources": [
+    {
+     "title": "StarTrek.com, 'Star Trek 101: Latinum' — gold-pressed latinum comes in slips, strips, bars and bricks",
+     "url": "https://www.startrek.com/news/star-trek-101-latinum",
+     "reasoning": "Source for the denominations and their exchange rates."
+    },
+    {
+     "title": "Star Trek Online Wiki, 'Latinum' — 100 slips = 1 strip; 20 strips = 1 bar; bar-to-brick rate unknown",
+     "url": "https://sto.fandom.com/wiki/Latinum",
+     "reasoning": "Source for the denominations and their exchange rates."
+    }
+   ]
+  },
+  {
+   "id": "ankh_morpork",
+   "name": "Ankh-Morpork dollar",
+   "region": "Discworld (Terry Pratchett)",
+   "era": [
+    1983,
+    null
+   ],
+   "baseUnit": "dollar",
+   "aliases": [],
+   "notes": "The L-Space wiki gives the £sd-style system used here; some fan sources treat the dollar as 100 pence, and the books are not fully consistent. The famously debased dollar is 'theoretically gold' but contains less gold than sea water.",
+   "denominations": [
+    {
+     "id": "dollar",
+     "name": "Dollar",
+     "symbol": "$AM",
+     "value": 1,
+     "aliases": [
+      "AM$",
+      "Ankh-Morpork dollar"
+     ]
+    },
+    {
+     "id": "guinea",
+     "name": "Guinea",
+     "value": 1.05,
+     "notes": "21 shillings; 'falling from use'."
+    },
+    {
+     "id": "crown",
+     "name": "Crown",
+     "value": 0.25
+    },
+    {
+     "id": "half_crown",
+     "name": "Half-crown",
+     "value": 0.125
+    },
+    {
+     "id": "shilling",
+     "name": "Shilling",
+     "value": 0.05
+    },
+    {
+     "id": "sixpence",
+     "name": "Sixpence",
+     "value": 0.025
+    },
+    {
+     "id": "groat",
+     "name": "Groat",
+     "value": 0.016666666666666666,
+     "notes": "4 pence — the Assassins' fee for killing Foul Ole Ron."
+    },
+    {
+     "id": "thruppence",
+     "name": "Thruppeny bit",
+     "value": 0.0125
+    },
+    {
+     "id": "penny",
+     "name": "Penny",
+     "value": 0.004166666666666667,
+     "aliases": [
+      "pence"
+     ]
+    },
+    {
+     "id": "halfpenny",
+     "name": "Halfpenny",
+     "value": 0.0020833333333333333
+    },
+    {
+     "id": "farthing",
+     "name": "Farthing",
+     "value": 0.0010416666666666667
+    },
+    {
+     "id": "mite",
+     "name": "Mite",
+     "value": 0.0005208333333333333,
+     "notes": "Costs sixpence to make, 'on account of being so small and having the hole in the middle' (Making Money)."
+    },
+    {
+     "id": "elim",
+     "name": "Elim",
+     "value": 0.00026041666666666666,
+     "notes": "Costs a shilling to make (Making Money)."
+    }
+   ],
+   "series": [
+    {
+     "year": 2004,
+     "usd2025": 100,
+     "low": 50,
+     "high": 170,
+     "confidence": "very low",
+     "method": "in-world wages → modern equivalents",
+     "provenance": "compiled",
+     "sources": [
+      {
+       "title": "The L-Space Web wiki, 'Currency' — Ankh-Morpork dollar = 20 shillings; shilling = 12 pence; down to mites and elims; 'Going Postal': a senior official earns $20 a week",
+       "url": "https://wiki.lspace.org/Currency",
+       "reasoning": "Going Postal: a senior government official earns $20 a week; Guards! Guards!: five extra dollars a month is a respectable raise. The dollar is 20 shillings of 12 pence."
+      },
+      {
+       "title": "For modern comparison wages: US Bureau of Labor Statistics, Occupational Employment and Wage Statistics",
+       "url": "https://www.bls.gov/oes/",
+       "reasoning": "Wage basis: a senior official's modern weekly pay of roughly $2,000-3,300 ÷ $20 → ≈ $100-165 per dollar; a 'respectable raise' of $5/month vs a modern raise of a few hundred dollars suggests ≈ $50-60. Central estimate $100."
+      }
+     ]
+    }
+   ],
+   "fictional": true,
+   "work": "Discworld (Terry Pratchett, 1983–2015)",
+   "sources": [
+    {
+     "title": "The L-Space Web wiki, 'Currency' — Ankh-Morpork dollar = 20 shillings; shilling = 12 pence; down to mites and elims; 'Going Postal': a senior official earns $20 a week",
+     "url": "https://wiki.lspace.org/Currency",
+     "reasoning": "Source for the denominations and their exchange rates."
+    }
+   ]
+  },
+  {
+   "id": "triganic_pu",
+   "name": "Triganic Pu",
+   "region": "The Hitchhiker's Guide to the Galaxy",
+   "era": [
+    1978,
+    null
+   ],
+   "baseUnit": "Pu",
+   "aliases": [],
+   "notes": "Eight Ningis to one Pu. The Guide adds that Ningis are not negotiable currency, because the Galactibanks refuse to deal in fiddling small change. No real-world value is established.",
+   "denominations": [
+    {
+     "id": "pu",
+     "name": "Pu",
+     "value": 1,
+     "aliases": [
+      "Triganic Pu"
+     ]
+    },
+    {
+     "id": "ningi",
+     "name": "Ningi",
+     "value": 0.125,
+     "notes": "A triangular rubber coin 6,800 miles along each side — so no one has ever collected enough to own one Pu."
+    }
+   ],
+   "series": [],
+   "fictional": true,
+   "work": "The Hitchhiker's Guide to the Galaxy (Douglas Adams, 1978–)",
+   "sources": [
+    {
+     "title": "Douglas Adams, 'The Hitch Hiker's Guide to the Galaxy' (1979) — Open Library record",
+     "url": "https://openlibrary.org/books/OL7506950M/The_Hitch_Hiker%27s_Guide_to_the_Galaxy",
+     "reasoning": "Source for the denominations and their exchange rates."
+    },
+    {
+     "title": "Forum quotation of the Guide's passage on the Triganic Pu (eight Ningis to one Pu; the Ningi a triangular rubber coin 6,800 miles along each side)",
+     "url": "https://coppercoins.com/forum/viewtopic.php?p=11292",
+     "reasoning": "Source for the denominations and their exchange rates."
     }
    ]
   }

@@ -64,11 +64,11 @@ export class UnitLibrary {
     return found[0]!;
   }
 
-  /** Free-text search over names, aliases, systems, regions and notes. */
+  /** Free-text search over names, aliases, systems, regions, notes and source works. */
   search(text: string, options: SearchOptions = {}): Unit[] {
     const q = normalize(text);
     return this.data.units.filter(
-      (u) => matches(u, options) && [u.id, u.name, u.system, u.region, u.notes ?? "", ...u.aliases].some((s) => normalize(s).includes(q)),
+      (u) => matches(u, options) && [u.id, u.name, u.system, u.region ?? "", u.notes ?? "", u.work ?? "", ...u.aliases].some((s) => normalize(s).includes(q)),
     );
   }
 

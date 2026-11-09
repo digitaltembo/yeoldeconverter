@@ -7,7 +7,8 @@ Each unit is defined either directly in SI terms or as a multiple of another uni
 definitions so derived units stay consistent with their parents.
 Base units: length m, area m², volume L, mass kg, count each.
 """
-import json, math, sys
+import json
+import math, sys
 
 out_path = sys.argv[1]
 WP = "https://en.wikipedia.org/wiki/"
@@ -82,15 +83,43 @@ SRC = {
     "wp_longhundred": ("Wikipedia, 'Long hundred' — 120", WP + "Long_hundred"),
     "wp_ream": ("Wikipedia, 'Ream' and 'Quire (paper)' — 480/500 sheets; 24/25 sheets", WP + "Ream"),
     "wp_shekel": ("Wikipedia, 'Shekel' — ≈ 11 g (Hebrew) vs ≈ 8.3 g (Mesopotamian)", WP + "Shekel"),
+    "gulliver": ("Jonathan Swift, 'Gulliver's Travels' (1726), Part I, chapters 3, 4 and 5 — Project Gutenberg text",
+                 "https://www.gutenberg.org/ebooks/829"),
+    "tg_ranga": ("Tolkien Gateway, 'Ranga' — from 'Unfinished Tales', 'The Disaster of the Gladden Fields', appendix on "
+                 "Númenórean linear measures", "https://tolkiengateway.net/wiki/Ranga"),
+    "tg_lar": ("Tolkien Gateway, 'Lár' (5,000 rangar; a pause on the march)", "https://tolkiengateway.net/wiki/L%C3%A1r"),
+    "kli_2009": ("Klingon Language Institute, tlhIngan-Hol list (Aug 2009) — summary of canon Klingon units: 'uj ≈ 35 cm, "
+                 "'uj'a' ≈ 3.15 m, qelI'qam ≈ 2 km (Star Trek Encyclopedia), loghqam = 1.25 light years, tlho'ren 'in the "
+                 "quart/liter range'", "https://kli.org/tlhIngan-Hol/2009/August/msg00008.html"),
+    "kli_1998": ("Klingon Language Institute, tlhIngan-Hol list (June 1998) — word list from Marc Okrand's 'Klingon for the "
+                 "Galactic Traveler': cheb ≈ 5 lb or 2.25 kg", "https://kli.org/tlhIngan-Hol/1998/June/msg00562.html"),
+    "treknology_k": ("Ex Astris Scientia, Treknology Encyclopedia, 'Kellicam' — on-screen uses; ≈ 2 km is a fan estimate "
+                     "from comparing transporter ranges", "https://www.ex-astris-scientia.org/treknology/treknology-k.htm"),
+    "wp_lightyear": ("Wikipedia, 'Light-year' (9,460,730,472,580,800 m)", WP + "Light-year"),
+    "wp_au": ("Wikipedia, 'Astronomical unit' (149,597,870,700 m exactly, IAU 2012 Resolution B2)", WP + "Astronomical_unit"),
+    "wp_parsec": ("Wikipedia, 'Parsec' (648,000/π au ≈ 3.2616 light-years)", WP + "Parsec"),
+    "iau_res": ("International Astronomical Union, list of resolutions (2012 B2 fixes the au; 2015 B2 defines the parsec)",
+                "https://www.iau.org/Iau/Publications/List-of-Resolutions"),
+    "iau_2015b2": ("Mamajek et al., 'IAU 2015 Resolution B2' (arXiv:1510.06262) — 'the parsec (pc) is defined as exactly "
+                   "(648 000/π) au'", "https://arxiv.org/abs/1510.06262"),
+    "wp_smoot": ("Wikipedia, 'Smoot' — Oliver R. Smoot's height, 5 ft 7 in; the Harvard Bridge is 364.4 smoots 'plus or minus "
+                 "one ear'", WP + "Smoot"),
+    "codata_lp": ("NIST, CODATA recommended value: Planck length, 1.616 255(18) × 10⁻³⁵ m",
+                  "https://physics.nist.gov/cgi-bin/cuu/Value?plkl"),
+    "codata_mp": ("NIST, CODATA recommended value: Planck mass, 2.176 434(24) × 10⁻⁸ kg",
+                  "https://physics.nist.gov/cgi-bin/cuu/Value?plkm"),
+    "wp_planck": ("Wikipedia, 'Planck units'", WP + "Planck_units"),
+    "wp_angstrom": ("Wikipedia, 'Angstrom' — 10⁻¹⁰ m exactly; named after Anders Jonas Ångström", WP + "Angstrom"),
+    "wp_kessel": ("Wikipedia, 'Kessel Run' — Han Solo's boast of making it 'in less than twelve parsecs'", WP + "Kessel_Run"),
     "si": ("BIPM, 'The International System of Units (SI)' brochure", "https://www.bipm.org/en/publications/si-brochure"),
 }
 
 UNITS = []
 
 
-def U(id_, name, cat, system, region, era, defn, srcs, aliases=None, notes=None, low=None, high=None, sub=None):
+def U(id_, name, cat, system, region, era, defn, srcs, aliases=None, notes=None, low=None, high=None, sub=None, work=None):
     UNITS.append(dict(id=id_, name=name, category=cat, subcategory=sub, system=system, region=region, era=era,
-                      defn=defn, srcs=srcs, aliases=aliases or [], notes=notes, low=low, high=high))
+                      defn=defn, srcs=srcs, aliases=aliases or [], notes=notes, low=low, high=high, work=work))
 
 
 L, A, V, M, C = "length", "area", "volume", "mass", "count"
@@ -100,6 +129,9 @@ NOW = None
 # ================================================================ LENGTH
 U("metre", "Metre", L, "Metric (SI)", "International", [1799, NOW], ("si", 1), ["si"], aliases=["meter", "m"])
 U("kilometre", "Kilometre", L, "Metric (SI)", "International", [1799, NOW], (1000, "metre"), ["si"], aliases=["km"])
+U("angstrom", "Ångström", L, "Metric (SI)", "International", [1868, NOW], (1e-10, "metre"), ["wp_angstrom", "si"],
+  aliases=["angstrom", "Å", "\u212b"], notes="Not an SI unit but metric: 0.1 nanometre, about the size of an atom. Used for atomic "
+  "radii, chemical bonds and wavelengths of light (visible light is roughly 4,000–7,000 Å).")
 U("inch", "Inch", L, EN, "Britain, US, Commonwealth", [1100, NOW], ("si", 0.0254), ["intl_yard", "nist811"], aliases=["in", '"'],
   notes="Exactly 25.4 mm since 1959; pre-1959 British and US inches differed by ~2 parts per million.")
 U("foot", "Foot", L, EN, "Britain, US", [1100, NOW], (12, "inch"), ["intl_yard", "uk_wma"], aliases=["ft", "'", "feet"])
@@ -506,16 +538,80 @@ U("ream_old", "Ream (old)", C, CNT, "Britain", [1400, 1950], (20, "quire_old"), 
 U("quire", "Quire (modern)", C, CNT, "International", [1900, NOW], (25, "each"), ["wp_ream"])
 U("ream", "Ream (modern)", C, CNT, "International", [1900, NOW], (20, "quire"), ["wp_ream"])
 
+# ================================================================ ASTRONOMICAL
+AST = "Astronomical"
+U("au", "Astronomical unit", L, AST, "International", [1976, NOW], ("si", 149597870700), ["wp_au", "iau_res"], aliases=["AU", "ua"],
+  notes="Roughly the mean Earth–Sun distance; fixed at exactly 149,597,870,700 m in 2012.")
+U("light_year", "Light-year", L, AST, "International", [1838, NOW], ("si", 9460730472580800), ["wp_lightyear", "iau_res"],
+  aliases=["ly", "lightyear"], notes="The distance light travels in a Julian year (365.25 days) in vacuum.")
+U("parsec", "Parsec", L, AST, "International", [1913, NOW], (648000 / math.pi, "au"), ["wp_parsec", "iau_2015b2", "wp_kessel"],
+  aliases=["pc"], notes="The distance at which 1 au subtends one arcsecond: about 3.26 light-years. A distance, not a time — "
+  "hence the debate over Han Solo making the Kessel Run 'in less than twelve parsecs' (Star Wars, 1977).")
+U("kiloparsec", "Kiloparsec", L, AST, "International", [1920, NOW], (1000, "parsec"), ["wp_parsec"], aliases=["kpc"])
+U("megaparsec", "Megaparsec", L, AST, "International", [1930, NOW], (1e6, "parsec"), ["wp_parsec"], aliases=["Mpc"])
+
+# ================================================================ PLANCK
+# Natural units from the constants c, G and ħ. Measured, not defined: G limits them to ~1 part in 10^5.
+PL = "Planck (natural units)"
+U("planck_length", "Planck length", L, PL, "Physics", [1899, NOW], ("si", 1.616255e-35), ["codata_lp", "wp_planck"],
+  aliases=["lP"], notes="√(ħG/c³). Far below anything measurable: a proton is about 10²⁰ Planck lengths across.")
+U("planck_area", "Planck area", A, PL, "Physics", [1899, NOW], ("sq", "planck_length"), ["codata_lp", "wp_planck"])
+U("planck_volume", "Planck volume", V, PL, "Physics", [1899, NOW], ("cu", "planck_length"), ["codata_lp", "wp_planck"])
+U("planck_mass", "Planck mass", M, PL, "Physics", [1899, NOW], ("si", 2.176434e-8), ["codata_mp", "wp_planck"],
+  aliases=["mP"], notes="√(ħc/G), about 22 micrograms — roughly a flea's egg; unlike the other Planck units it is everyday-sized.")
+
+# ================================================================ NOVELTY
+U("smoot", "Smoot", L, "Novelty", "Cambridge, Massachusetts (MIT)", [1958, NOW], (67, "inch"), ["wp_smoot"],
+  notes="The height of MIT pledge Oliver R. Smoot, laid end over end to measure the Harvard Bridge in 1958: 364.4 smoots "
+  "'plus or minus one ear'. The marks are still repainted, and Google Earth once offered the smoot as a unit.")
+
+# ================================================================ FICTIONAL
+# Units from novels and films. 'era' starts at the work's publication; precision describes how firmly the work
+# (or its official reference material) fixes the value, not whether the unit was ever real.
+LIL, W_LIL = "Lilliputian (fictional)", "Gulliver's Travels (Jonathan Swift, 1726)"
+U("drurr", "Drurr", L, LIL, "Lilliput", [1726, NOW], (1 / 14, "inch"), ["gulliver"], work=W_LIL,
+  notes="'A measure about the fourteenth part of an inch' — the High-Heels' heels are lower by a drurr than the court's.")
+U("glumgluff", "Glumgluff", L, LIL, "Lilliput", [1726, NOW], (6 / 70, "foot"), ["gulliver"], work=W_LIL,
+  notes="The channel to Blefuscu is 'seventy glumgluffs deep, which is about six feet of European measure'.")
+U("blustrug", "Blustrug", L, LIL, "Lilliput", [1726, NOW], (12 / 5000, "mile"), ["gulliver"], work=W_LIL,
+  notes="The Emperor's dominions 'extend five thousand blustrugs (about twelve miles in circumference)'.")
+
+NUM, W_TOL = "Númenórean (fictional)", "Unfinished Tales (J. R. R. Tolkien, ed. Christopher Tolkien, 1980)"
+U("ranga", "Ranga (full pace)", L, NUM, "Númenor, Gondor, Arnor", [1980, NOW], (38, "inch"), ["tg_ranga"], work=W_TOL,
+  aliases=["rangar", "Numenorean pace"], notes="A full stride of a grown Númenórean in quick march; Tolkien gives it as "
+  "'slightly longer than our yard, approximately 38 inches'. Also the average height of a Hobbit.")
+U("man_high", "Man-high", L, NUM, "Gondor, Arnor", [1980, NOW], (2, "ranga"), ["tg_ranga"], work=W_TOL,
+  notes="Two rangar — the height of a man in the later days, when the Dúnedain had diminished.")
+U("lar", "Lár (Númenórean league)", L, NUM, "Númenor, Gondor, Arnor", [1980, NOW], (5000, "ranga"), ["tg_lar", "tg_ranga"],
+  work=W_TOL, aliases=["lar", "lárar"], notes="Quenya 'a pause': marching troops halted every 5,000 rangar. Almost exactly an "
+  "English league (5,277 yards 2 feet 4 inches).")
+
+KLI, W_ST = "Klingon (fictional)", "Star Trek (Paramount, 1966–); Klingon units from Marc Okrand's books"
+U("uj", "'uj", L, KLI, "Klingon Empire", [1992, NOW], ("si", 0.35), ["kli_2009"], work=W_ST, aliases=["uj", "ujmey"],
+  notes="'Unit of measure, about 35 cm' (Okrand) — roughly a large Klingon foot.")
+U("uj_a", "'uj'a'", L, KLI, "Klingon Empire", [1997, NOW], (9, "uj"), ["kli_2009"], work=W_ST, aliases=["uj'a'", "uja"],
+  notes="'Big 'uj': nine 'uj, about 3.15 m.")
+U("kellicam", "Kellicam (qelI'qam)", L, KLI, "Klingon Empire", [1984, NOW], ("si", 2000), ["kli_2009", "treknology_k"],
+  work=W_ST, aliases=["qelI'qam", "qeliqam", "kellicams"], low=1000, high=2500,
+  notes="Heard on screen from Star Trek III ('approximately 1,500 kellicams'). The Star Trek Encyclopedia's 'roughly 2 km' "
+  "is an estimate; it is probably of the order of a kilometre.")
+U("loghqam", "Loghqam", L, KLI, "Klingon Empire", [1997, NOW], (1.25, "light_year"), ["kli_2009"],
+  work=W_ST, notes="1.25 light years (Okrand).")
+U("cheb", "Cheb", M, KLI, "Klingon Empire", [1997, NOW], ("si", 2.25), ["kli_1998"], work=W_ST,
+  notes="'About 5 lbs. or 2.25 kg' (Okrand).")
+U("tlhoren", "Tlho'ren", V, KLI, "Klingon Empire", [1997, NOW], ("si", 1.0), ["kli_2009"], work=W_ST, aliases=["tlho'ren"],
+  low=0.946352946, high=1.1365225, notes="Okrand puts it 'in the quart/liter range'; the range spans a US to an imperial quart.")
+
 # ================================================================ resolve
 BASE = {L: "m", A: "m²", V: "L", M: "kg", C: "each"}
 BY_ID = {u["id"]: u for u in UNITS}
 # base values fixed by law or definition; other base values are measured approximations
 EXACT = {"metre", "inch", "nautical_mile", "survey_foot", "gal_imp", "lb", "kilogram", "carat", "litre", "zollpfund",
-         "chi_shi", "li_shi", "mu_shi", "jin_shi", "catty_hk", "shaku", "koku", "monme", "each", "dunam_metric"}
+         "chi_shi", "li_shi", "mu_shi", "jin_shi", "catty_hk", "shaku", "koku", "monme", "each", "dunam_metric", "au", "light_year"}
 assert len(BY_ID) == len(UNITS), "duplicate unit id"
 
 
-def sig(x, n=12):
+def sig(x, n=15):
     if x == 0:
         return 0
     return float(f"{x:.{n}g}")
@@ -572,8 +668,12 @@ for u in UNITS:
     d = u["defn"]
     reasoning = describe(u)
     precision = "uncertain" if u["low"] is not None or (u["lo"] != u["hi"]) else "exact" if u["exact"] else "approximate"
+    if u["work"] and precision == "exact":
+        precision = "approximate"  # the works give these only as 'about' or 'approximately'
     if precision == "uncertain":
         reasoning += f" Uncertain or variable: plausible range {fmt(u['lo'])}-{fmt(u['hi'])} {BASE[u['category']]}."
+    elif u["work"]:
+        reasoning += " Fictional unit: the value is as stated (approximately) in the work or its official reference material."
     elif precision == "approximate":
         reasoning += " Value is a modern measurement/reconstruction of a historical standard, not an exact legal definition."
     sources = []
@@ -593,7 +693,10 @@ for u in UNITS:
     elif d[0] in ("sq", "cu"):
         rec["definition"] = {"type": "square" if d[0] == "sq" else "cube", "of": d[1]}
     else:
-        rec["definition"] = {"type": "multiple", "factor": sig(d[0], 12), "of": d[1]}
+        rec["definition"] = {"type": "multiple", "factor": sig(d[0]), "of": d[1]}
+    if u["work"]:
+        rec["fictional"] = True
+        rec["work"] = u["work"]
     if u["notes"]:
         rec["notes"] = u["notes"]
     rec["sources"] = sources
@@ -614,8 +717,21 @@ doc = {
         "periods or regions. Many pre-modern units varied from town to town.",
         "'era' is [first, last] year of common use (approximate; negative = BCE; null = still in use).",
         "Volume units carry subcategory 'liquid' or 'dry' where the distinction matters.",
+        "Units with 'fictional': true come from novels and films ('work' names the source); 'era' starts at publication, and "
+        "'precision' reflects how firmly the work fixes the value.",
     ],
     "units": out,
 }
 json.dump(doc, open(out_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+# ------------------------------------------------------------ slim copy
+# Only what lookups and conversions need: no sources, notes, regions or eras. Same shape, fields omitted.
+SLIM_UNIT = ["id", "name", "category", "subcategory", "system", "aliases", "si", "precision", "low", "high", "definition", "fictional"]
+slim = {k: doc[k] for k in ("schemaVersion", "title", "generated")}
+slim["slim"] = True
+slim["baseUnits"] = BASE
+slim["units"] = [{k: u[k] for k in SLIM_UNIT if k in u} for u in out]
+slim_path = out_path[:-5] + ".slim.json" if out_path.endswith(".json") else out_path + ".slim"
+json.dump(slim, open(slim_path, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+print(f"slim copy: {slim_path}")
 print(len(out), "units;", {c: sum(1 for u in out if u["category"] == c) for c in BASE})

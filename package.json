@@ -10,18 +10,30 @@
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
     },
-    "./bundle": "./dist/yeoldeconverter.min.js"
+    "./slim": {
+      "types": "./dist/src/slim.d.ts",
+      "default": "./dist/src/slim.js"
+    },
+    "./bundle": "./dist/yeoldeconverter.min.js",
+    "./bundle/slim": "./dist/yeoldeconverter.slim.min.js",
+    "./data/*": "./data/*"
   },
   "files": [
-    "dist"
+    "dist",
+    "data/currencies.json",
+    "data/currencies.slim.json",
+    "data/units.json",
+    "data/units.slim.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test \"test/**/*.test.ts\"",
-    "bundle": "npm run bundle:esm && npm run bundle:iife",
+    "bundle": "npm run bundle:esm && npm run bundle:iife && npm run bundle:slim-esm && npm run bundle:slim-iife",
     "bundle:esm": "esbuild src/index.ts --bundle --minify --format=esm --target=es2020 --legal-comments=none --outfile=dist/yeoldeconverter.min.js",
-    "bundle:iife": "esbuild src/index.ts --bundle --minify --format=iife --global-name=YeOldeConverter --target=es2020 --legal-comments=none --outfile=dist/yeoldeconverter.iife.min.js"
+    "bundle:iife": "esbuild src/index.ts --bundle --minify --format=iife --global-name=YeOldeConverter --target=es2020 --legal-comments=none --outfile=dist/yeoldeconverter.iife.min.js",
+    "bundle:slim-esm": "esbuild src/slim.ts --bundle --minify --target=es2020 --legal-comments=none --format=esm --outfile=dist/yeoldeconverter.slim.min.js",
+    "bundle:slim-iife": "esbuild src/slim.ts --bundle --minify --target=es2020 --legal-comments=none --format=iife --global-name=YeOldeConverter --outfile=dist/yeoldeconverter.slim.iife.min.js"
   },
   "license": "UNLICENSED",
   "private": true,
