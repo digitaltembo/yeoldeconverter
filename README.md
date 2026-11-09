@@ -1,6 +1,6 @@
 # Ye Olde Converter
 
-Makes sense of the money and measures, inspired by that feeling of adriftness you gen when a book mentions an unfamiliar currency. It converts:
+Makes sense of the money and measures, inspired by that feeling of adriftness you get when a book mentions an unfamiliar currency. It converts:
 
 - **Money:** 35 historical currencies, from the Roman denarius to the Deutsche Mark, into 2025 US dollars for a given year, or into one another. It reads sums as books write them (`£3 4s 6d`, `2 guineas`, `30 denarii`) and explains coins ("what's a florin?"). It also includes fictional money: D&D, Westeros, Star Wars, Star Trek, Discworld and Hitchhiker's.
 - **Measures:** 364 units of length, area, volume, mass and count, including English, French, German, Russian, Japanese, Chinese, Indian, Roman, Greek, biblical, astronomical and fictional units.
