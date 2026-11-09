@@ -26,6 +26,28 @@ python3 scripts/build_currencies.py data/source-series.json data/currencies.json
 python3 scripts/build_units.py data/units.json
 ```
 
+## Installing
+
+```sh
+npm install yeoldeconverter
+```
+
+```ts
+import { currencies, units } from "yeoldeconverter";       // full data, with sources
+import { currencies, units } from "yeoldeconverter/slim";  // slim data, no sources
+```
+
+Or load a [single-file bundle](#single-file-bundles) from a CDN:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/yeoldeconverter@0.1.0/dist/yeoldeconverter.slim.iife.min.js"></script>
+<script>
+  // YeOldeConverter.currencies, YeOldeConverter.units
+</script>
+```
+
+The same paths work on unpkg (`https://unpkg.com/yeoldeconverter@0.1.0/dist/…`), and on cdnjs once it is listed there.
+
 ## TypeScript library
 
 `src/` is a small library over the two JSON files. It has no runtime dependencies and works in Node 22.6+ or with any bundler that supports JSON imports.
@@ -390,3 +412,17 @@ Each article cites the primary metrological literature behind it.
 - [Tolkien Gateway, "Ranga"](https://tolkiengateway.net/wiki/Ranga) and ["Lár"](https://tolkiengateway.net/wiki/L%C3%A1r). These summarise *Unfinished Tales*, which gives the ranga as about 38 inches and the lár as 5,000 rangar.
 - Klingon Language Institute list archives ([2009](https://kli.org/tlhIngan-Hol/2009/August/msg00008.html), [1998](https://kli.org/tlhIngan-Hol/1998/June/msg00562.html)). These collect Marc Okrand's values: the 'uj is about 35 cm, the cheb about 2.25 kg, the loghqam 1.25 light-years, and the tlho'ren is "in the quart/liter range".
 - [Ex Astris Scientia, Treknology Encyclopedia](https://www.ex-astris-scientia.org/treknology/treknology-k.htm). It explains why the kellicam's "about 2 km" is only an estimate.
+
+## Releasing
+
+Publishing to npm is done by `.github/workflows/publish.yml` when a GitHub release is published:
+
+1. Bump `version` in `package.json` (`npm version 0.2.0 --no-git-tag-version`), commit and push.
+2. Create a GitHub release with tag `v0.2.0`. The workflow fails if the tag and `package.json` disagree. Releases marked as pre-releases are published under the `next` dist-tag.
+3. The workflow runs the typecheck and tests, then `npm publish`. `prepack` cleans `dist/`, compiles it and builds the bundles.
+
+The workflow publishes through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC, no token needed), which also attaches provenance. cdnjs and jsDelivr pick new versions up from npm automatically.
+
+## License
+
+[MIT](LICENSE)

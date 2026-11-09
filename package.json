@@ -2,9 +2,22 @@
   "name": "yeoldeconverter",
   "version": "0.1.0",
   "description": "Convert historical currencies (to 2025 USD) and historical units of measurement, with sources.",
+  "keywords": [
+    "currency",
+    "historical",
+    "inflation",
+    "money",
+    "conversion",
+    "units",
+    "measurement",
+    "history",
+    "exchange-rate"
+  ],
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
+  "unpkg": "./dist/yeoldeconverter.iife.min.js",
+  "jsdelivr": "./dist/yeoldeconverter.iife.min.js",
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
@@ -16,16 +29,14 @@
     },
     "./bundle": "./dist/yeoldeconverter.min.js",
     "./bundle/slim": "./dist/yeoldeconverter.slim.min.js",
-    "./data/*": "./data/*"
+    "./data/*": "./dist/data/*",
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist",
-    "data/currencies.json",
-    "data/currencies.slim.json",
-    "data/units.json",
-    "data/units.slim.json"
+    "dist"
   ],
   "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test \"test/**/*.test.ts\"",
@@ -33,13 +44,29 @@
     "bundle:esm": "esbuild src/index.ts --bundle --minify --format=esm --target=es2020 --legal-comments=none --outfile=dist/yeoldeconverter.min.js",
     "bundle:iife": "esbuild src/index.ts --bundle --minify --format=iife --global-name=YeOldeConverter --target=es2020 --legal-comments=none --outfile=dist/yeoldeconverter.iife.min.js",
     "bundle:slim-esm": "esbuild src/slim.ts --bundle --minify --target=es2020 --legal-comments=none --format=esm --outfile=dist/yeoldeconverter.slim.min.js",
-    "bundle:slim-iife": "esbuild src/slim.ts --bundle --minify --target=es2020 --legal-comments=none --format=iife --global-name=YeOldeConverter --outfile=dist/yeoldeconverter.slim.iife.min.js"
+    "bundle:slim-iife": "esbuild src/slim.ts --bundle --minify --target=es2020 --legal-comments=none --format=iife --global-name=YeOldeConverter --outfile=dist/yeoldeconverter.slim.iife.min.js",
+    "prepack": "npm run clean && npm run build && npm run bundle"
   },
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "author": "Nolan Hawkins",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/digitaltembo/yeoldeconverter.git"
+  },
+  "homepage": "https://github.com/digitaltembo/yeoldeconverter#readme",
+  "bugs": {
+    "url": "https://github.com/digitaltembo/yeoldeconverter/issues"
+  },
   "devDependencies": {
     "@types/node": "^26.6.4",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.10"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
