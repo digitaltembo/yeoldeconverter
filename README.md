@@ -2,8 +2,8 @@
 
 Makes sense of the money and measures, inspired by that feeling of adriftness you get when a book mentions an unfamiliar currency. It converts:
 
-- **Money:** 35 historical currencies, from the Roman denarius to the Deutsche Mark, into 2025 US dollars for a given year, or into one another. It reads sums as books write them (`£3 4s 6d`, `2 guineas`, `30 denarii`) and explains coins ("what's a florin?"). It also includes fictional money: D&D, Westeros, Star Wars, Star Trek, Discworld and Hitchhiker's.
-- **Measures:** 364 units of length, area, volume, mass and count, including English, French, German, Russian, Japanese, Chinese, Indian, Roman, Greek, biblical, astronomical and fictional units.
+- **Money:** 38 historical currencies, from the Roman denarius to the Deutsche Mark, into 2025 US dollars for a given year, or into one another. It reads sums as books write them (`£3 4s 6d`, `2 guineas`, `30 denarii`) and explains coins ("what's a florin?"). It also includes fictional money: D&D, Westeros, Star Wars, Star Trek, Discworld and Hitchhiker's.
+- **Measures:** 357 units of length, area, volume, mass and count, including English, French, German, Russian, Japanese, Chinese, Indian, Roman, Greek, biblical, astronomical and fictional units.
 
 Every value comes with a plausible range, a confidence rating and its sources. It is not meant to have the highest accuracy, but rather to get a general sense or intuition around numbers.
 
@@ -52,9 +52,16 @@ The bundles are `yeoldeconverter.min.js` (ES module) and `yeoldeconverter.iife.m
 2. That amount is adjusted to 2025 with consumer price indexes: the Bank of England's *Millennium of Macroeconomic Data* joined to ONS CPI for the UK, and the Minneapolis Fed CPI for the US.
 3. Where no price index exists (antiquity, Edo Japan), the value is estimated from grain or rice prices.
 
-Rates and coin standards come from MeasuringWorth, the Bank of England and the Federal Reserve, from monetary histories (Spooner, Pamuk, Gemmill & Mayhew, Scheidel), and from Wikipedia for coin weights and parities. Fictional rates come from the works themselves or their official and fan references.
+Exchange rates come from downloaded datasets: MeasuringWorth (dollar exchange rates and the gold/silver price ratio), the Federal Reserve via FRED, the Bank of England, the Jordà–Schularick–Taylor Macrohistory Database and the Penn World Table. Coin standards and parities are quoted from Wikipedia. Where neither exists, values are estimates based on monetary histories (Spooner, Pamuk, Gemmill & Mayhew, Scheidel). Fictional rates come from the works themselves or their official and fan references.
 
-**Units.** Values are based on statutes and standards (the 1959 international yard and pound, the UK Weights and Measures Act 1985, NIST, BIPM, the IAU and CODATA), and on reference articles for historical units. Each unit is defined in terms of another, so conversions stay consistent with each other.
+Each data point is labelled by the weakest number behind it:
+- `dataset`: every exchange rate and price index was read from a downloaded dataset.
+- `quoted`: it also uses a parity, coin standard or rate quoted from the cited source. The source's `quote` field holds the text.
+- `estimate`: at least one number is neither, such as an interpolation between known standards. All ancient, Edo-period and fictional values are estimates.
+
+**Units.** Values are based on statutes and standards (the 1959 international yard and pound, the UK Weights and Measures Act 1985, NIST, BIPM, the IAU and CODATA), and on reference articles for historical units. Each unit is defined in terms of another, so conversions stay consistent with each other. Every unit not defined purely from others (such as a square foot) has at least one source with a `quote`: text from the cited page that states its value, its relation to another unit, or its range. A unit is given a low–high range only where a quoted source states both ends.
+
+`scripts/check_quotes.py` checks every quote, for both currencies and units, against saved copies of the cited pages. For a unit's quote, it also checks that the quote is near the unit's name on the page and that a number in it matches the unit's value, range or defining factor. The saved pages and downloaded datasets live in `sources/` (gitignored); `python3 -I scripts/check_quotes.py --fetch data/currencies.json data/units.json` downloads any that are missing.
 
 **Every data point lists its own sources**, with links and the reasoning for each step, in `data/currencies.json` and `data/units.json`. The scripts in `scripts/` rebuild these files.
 
@@ -83,6 +90,9 @@ Pass a currency's ID, name or an alias. Coins can be named in amounts (`2 guinea
 | Pound Scots | `scots` | 1370–1705 | Pound Scots, Merk, Shilling Scots, Bawbee, Plack, Bodle / turner, Penny Scots |
 | Irish pound (pre-1826) | `iep_old` | 1705–1825 | Pound (Irish), Shilling (Irish), Penny (Irish), Guinea (in Ireland) |
 | United States dollar | `usd` | 1795–2025 | Dollar, Eagle, Double eagle, Half eagle, Quarter eagle, Half dollar, Quarter, Bit, Dime, Nickel / half dime, Cent, Mill |
+| Canadian dollar | `cad` | 1860–2025 | Dollar, Toonie, Fifty-cent piece, Quarter, Dime, Nickel, Cent |
+| Mexican peso (1863-1992) | `mxp` | 1865–1990 | Peso, Centavo, Real (colloquial), Tostón, Hidalgo (gold), Centenario (gold) |
+| Mexican peso | `mxn` | 1995–2025 | Peso, Centavo, Old peso (1863-1992) |
 | Spanish dollar (peso, real de a ocho) | `spd` | 1575–1850 | Dollar / peso / piece of eight, Real (silver), Half real (medio), Maravedí, Escudo (gold), Pistole (2 escudos), Doubloon (8 escudos / onza) |
 | Livre tournois | `livre` | 1270–1795 | Livre (tournois), Sou / sol, Denier, Liard, Gros tournois, Écu d'or, Écu (silver, 'écu blanc'), Louis d'or, Pistole (accounting) |
 | French franc (1795-1959) | `frf` | 1800–1955 | Franc, Centime, Décime, Sou, Écu / pièce de cent sous, Napoléon / louis |
@@ -123,52 +133,51 @@ Pass a currency's ID, name or an alias. Coins can be named in amounts (`2 guinea
 
 ### Units
 
-Pass a unit's ID, name or an alias. Values are in metres, square metres, litres, kilograms or items.
+Pass a unit's ID, name or an alias. Values are in metres, square metres, litres, kilograms or items. ≈ marks values that are not exact by definition.
 
 <details>
-<summary>Length (123)</summary>
+<summary>Length (121)</summary>
 
 | Unit | ID | Also accepts | System | Value (m) |
 |---|---|---|---|---|
 | Metre | `metre` | meter, m | Metric (SI) | 1 |
 | Kilometre | `kilometre` | km | Metric (SI) | 1,000 |
-| Ångström | `angstrom` | angstrom, Å | Metric (SI) | 1 × 10<sup>-10</sup> |
-| Inch | `inch` | in, " | English / Imperial / US customary | 0.0,254 |
-| Foot | `foot` | ft, ', feet | English / Imperial / US customary | 0.3,048 |
-| Yard | `yard` | yd | English / Imperial / US customary | 0.9,144 |
-| Mile (statute) | `mile` | mi, statute mile | English / Imperial / US customary | 1609.34 |
+| Ångström | `angstrom` | angstrom, Å, Å | Metric (SI) | 1 × 10<sup>-10</sup> |
+| Inch | `inch` | in, " | English / Imperial / US customary | 0.0254 |
+| Foot | `foot` | ft, ', feet | English / Imperial / US customary | 0.3048 |
+| Yard | `yard` | yd | English / Imperial / US customary | 0.9144 |
+| Mile (statute) | `mile` | mi, statute mile | English / Imperial / US customary | 1,609.34 |
 | Furlong | `furlong` |  | English / Imperial / US customary | 201.168 |
-| Chain (Gunter's) | `chain` |  | English / Imperial / US customary | 20.1,168 |
-| Link | `link` |  | English / Imperial / US customary | 0.201,168 |
-| Rod / pole / perch | `rod` | pole, perch, rood (length) | English / Imperial / US customary | 5.0,292 |
-| Fathom | `fathom` |  | English / Imperial / US customary | 1.8,288 |
-| Hand | `hand` |  | English / Imperial / US customary | 0.1,016 |
-| Span | `span` |  | English / Imperial / US customary | 0.2,286 |
-| Nail (cloth) | `nail` |  | English / Imperial / US customary | 0.05,715 |
-| Barleycorn | `barleycorn` |  | English / Imperial / US customary | 0.00,846,667 |
-| Line | `line` |  | English / Imperial / US customary | 0.00,211,667 |
+| Chain (Gunter's) | `chain` |  | English / Imperial / US customary | 20.1168 |
+| Link | `link` |  | English / Imperial / US customary | 0.201168 |
+| Rod / pole / perch | `rod` | pole, perch, rood (length) | English / Imperial / US customary | 5.0292 |
+| Fathom | `fathom` |  | English / Imperial / US customary | 1.8288 |
+| Hand | `hand` |  | English / Imperial / US customary | 0.1016 |
+| Span | `span` |  | English / Imperial / US customary | 0.2286 |
+| Nail (cloth) | `nail` |  | English / Imperial / US customary | 0.05715 |
+| Barleycorn | `barleycorn` |  | English / Imperial / US customary | 0.00846667 |
+| Line | `line` |  | English / Imperial / US customary | 0.00211667 |
 | Thou / mil | `thou` | mil | English / Imperial / US customary | 2.54 × 10<sup>-5</sup> |
 | Point (typographic) | `point_dtp` |  | English / Imperial / US customary | 3.528 × 10<sup>-4</sup> |
-| Pica | `pica` |  | English / Imperial / US customary | 0.00,423,333 |
-| Cubit (English) | `cubit_en` |  | English / Imperial / US customary | 0.4,572 |
+| Pica | `pica` |  | English / Imperial / US customary | 0.00423333 |
+| Cubit (English) | `cubit_en` |  | English / Imperial / US customary | 0.4572 |
 | Ell (English) | `ell_en` |  | English / Imperial / US customary | 1.143 |
-| League (land) | `league` |  | English / Imperial / US customary | 4828.03 |
+| League (land) | `league` |  | English / Imperial / US customary | 4,828.03 |
 | Nautical mile | `nautical_mile` | nmi, sea mile | Nautical | 1,852 |
-| Admiralty mile | `admiralty_mile` |  | Nautical | 1853.18 |
+| Admiralty mile | `admiralty_mile` |  | Nautical | 1,853.18 |
 | Cable (Royal Navy) | `cable_rn` | cable length | Nautical | 185.318 |
 | Cable (US Navy) | `cable_us` |  | Nautical | 219.456 |
-| League (marine) | `league_marine` |  | Nautical | 5,556 |
-| US survey foot | `survey_foot` |  | English / Imperial / US customary | 0.304,801 |
+| US survey foot | `survey_foot` |  | English / Imperial / US customary | 0.304801 |
 | Ell (Scots) | `ell_scots` |  | Scottish | ≈ 0.941 |
 | Fall (Scots) | `fall_scots` |  | Scottish | ≈ 5.646 |
-| Mile (Scots) | `mile_scots` |  | Scottish | ≈ 1806.72 |
-| Perch (Irish) | `perch_irish` |  | Irish | 6.4,008 |
-| Mile (Irish) | `mile_irish` |  | Irish | 2048.26 |
+| Mile (Scots) | `mile_scots` |  | Scottish | ≈ 1,806.72 |
+| Perch (Irish) | `perch_irish` |  | Irish | 6.4008 |
+| Mile (Irish) | `mile_irish` |  | Irish | 2,048.26 |
 | Pes (Roman foot) | `pes` | Roman foot | Ancient Roman | ≈ 0.296 |
-| Digitus | `digitus` |  | Ancient Roman | ≈ 0.0,185 |
-| Uncia (Roman inch) | `uncia_len` |  | Ancient Roman | ≈ 0.0,246,667 |
+| Digitus | `digitus` |  | Ancient Roman | ≈ 0.0185 |
+| Uncia (Roman inch) | `uncia_len` |  | Ancient Roman | ≈ 0.0246667 |
 | Palmus | `palmus` |  | Ancient Roman | ≈ 0.074 |
-| Cubitus | `cubitus` |  | Ancient Roman | ≈ 0.444 |
+| Cubitus | `cubitus` | cubitum | Ancient Roman | ≈ 0.444 |
 | Gradus (step) | `gradus` |  | Ancient Roman | ≈ 0.74 |
 | Passus (pace) | `passus` |  | Ancient Roman | ≈ 1.48 |
 | Actus | `actus` |  | Ancient Roman | ≈ 35.52 |
@@ -176,65 +185,64 @@ Pass a unit's ID, name or an alias. Values are in metres, square metres, litres,
 | Roman mile (mille passus) | `mille_passus` | mille passuum, Roman mile | Ancient Roman | ≈ 1,480 |
 | Leuga (Gallic league) | `leuga` |  | Ancient Roman | ≈ 2,220 |
 | Pous (Greek foot) | `pous` |  | Ancient Greek | ≈ 0.308 |
-| Daktylos | `daktylos` |  | Ancient Greek | ≈ 0.01,925 |
+| Daktylos | `daktylos` |  | Ancient Greek | ≈ 0.01925 |
 | Pechys (Greek cubit) | `pechys` |  | Ancient Greek | ≈ 0.462 |
 | Orguia (Greek fathom) | `orguia` |  | Ancient Greek | ≈ 1.848 |
 | Plethron | `plethron` |  | Ancient Greek | ≈ 30.8 |
 | Stadion | `stadion` | stade, furlong (KJV) | Ancient Greek | ≈ 184.8 |
-| Parasang | `parasang` | farsakh, fersah, farsang | Ancient Persian | ≈ 5,600 |
-| Royal cubit (meh niswt) | `royal_cubit` |  | Ancient Egyptian | ≈ 0.5,236 |
-| Palm (shesep) | `egypt_palm` |  | Ancient Egyptian | ≈ 0.0,748 |
-| Digit (djeba) | `egypt_digit` |  | Ancient Egyptian | ≈ 0.0,187 |
+| Parasang | `parasang` | farsakh, fersah, farsang | Ancient Persian | ≈ 5,700 |
+| Royal cubit (meh niswt) | `royal_cubit` |  | Ancient Egyptian | ≈ 0.5236 |
+| Palm (shesep) | `egypt_palm` |  | Ancient Egyptian | ≈ 0.0748 |
+| Digit (djeba) | `egypt_digit` |  | Ancient Egyptian | ≈ 0.0187 |
 | Khet | `khet` |  | Ancient Egyptian | ≈ 52.36 |
 | Iteru (river measure) | `iteru` |  | Ancient Egyptian | ≈ 10,472 |
-| Kuš (Mesopotamian cubit) | `kus` |  | Mesopotamian | ≈ 0.497 |
-| Cubit (biblical, common) | `cubit_bib` | ammah, amah | Biblical / Talmudic | ≈ 0.457 |
-| Cubit (long / royal, Ezekiel) | `cubit_bib_long` |  | Biblical / Talmudic | ≈ 0.523 |
-| Span (zeret) | `span_bib` |  | Biblical / Talmudic | ≈ 0.2,285 |
-| Handbreadth (tefah) | `handbreadth` |  | Biblical / Talmudic | ≈ 0.0,761,667 |
-| Finger (etzba) | `finger_bib` |  | Biblical / Talmudic | ≈ 0.0,190,417 |
-| Reed (qaneh) | `reed` |  | Biblical / Talmudic | ≈ 2.742 |
-| Sabbath day's journey | `sabbath_journey` |  | Biblical / Talmudic | ≈ 914 |
-| Pied du roi (French foot) | `pied_du_roi` | pied, Paris foot | French (pre-metric) | ≈ 0.324,839 |
-| Pouce (French inch) | `pouce` |  | French (pre-metric) | ≈ 0.0,270,699 |
-| Ligne | `ligne` |  | French (pre-metric) | ≈ 0.00,225,583 |
-| Toise | `toise` |  | French (pre-metric) | ≈ 1.94,903 |
-| Perche (de Paris) | `perche_paris` |  | French (pre-metric) | ≈ 5.8,471 |
+| Kuš (Mesopotamian cubit) | `kus` | Babylonian cubit | Mesopotamian | ≈ 0.495 |
+| Cubit (biblical, common) | `cubit_bib` | ammah, amah | Biblical / Talmudic | ≈ 0.495 |
+| Cubit (long / royal, Ezekiel) | `cubit_bib_long` |  | Biblical / Talmudic | ≈ 0.5775 |
+| Span (zeret) | `span_bib` |  | Biblical / Talmudic | ≈ 0.2475 |
+| Handbreadth (tefah) | `handbreadth` |  | Biblical / Talmudic | ≈ 0.0825 |
+| Finger (etzba) | `finger_bib` |  | Biblical / Talmudic | ≈ 0.020625 |
+| Sabbath day's journey | `sabbath_journey` | techum shabbat, Sabbath limit | Biblical / Talmudic | ≈ 990 |
+| Pied du roi (French foot) | `pied_du_roi` | pied, Paris foot | French (pre-metric) | ≈ 0.324839 |
+| Pouce (French inch) | `pouce` |  | French (pre-metric) | ≈ 0.0270699 |
+| Ligne | `ligne` |  | French (pre-metric) | ≈ 0.00225583 |
+| Toise | `toise` |  | French (pre-metric) | ≈ 1.94903 |
+| Perche (de Paris) | `perche_paris` |  | French (pre-metric) | ≈ 5.8471 |
 | Arpent (length) | `arpent_len` |  | French (pre-metric) | ≈ 58.471 |
 | Aune (de Paris) | `aune` | French ell | French (pre-metric) | ≈ 1.188 |
-| Lieue de poste | `lieue_poste` |  | French (pre-metric) | ≈ 3898.07 |
-| Lieue commune (1/25°) | `lieue_commune` |  | French (pre-metric) | ≈ 4444.44 |
-| Rheinfuß (Prussian foot) | `rheinfuss` | Rhineland foot, Fuß | German (pre-metric) | ≈ 0.31,385 |
-| Rute (Prussian) | `rute_pr` |  | German (pre-metric) | ≈ 3.7,662 |
-| Meile (Prussian mile) | `meile_pr` |  | German (pre-metric) | ≈ 7532.4 |
-| Elle (Prussian) | `elle_pr` |  | German (pre-metric) | ≈ 0.66,694 |
-| Fuß (Viennese) | `fuss_wien` |  | German (pre-metric) | ≈ 0.316,081 |
-| Klafter (Viennese) | `klafter` |  | German (pre-metric) | ≈ 1.89,649 |
-| Meile (Austrian post mile) | `meile_at` |  | German (pre-metric) | ≈ 7585.94 |
-| Geographic mile (German) | `geo_mile` |  | German (pre-metric) | ≈ 7420.4 |
-| Arshin | `arshin` |  | Russian (pre-1924) | 0.7,112 |
-| Vershok | `vershok` |  | Russian (pre-1924) | 0.04,445 |
-| Sazhen | `sazhen` |  | Russian (pre-1924) | 2.1,336 |
-| Verst | `verst` | versta | Russian (pre-1924) | 1066.8 |
-| Vara (de Burgos) | `vara` |  | Spanish customary | ≈ 0.835,905 |
-| Pie (Castilian foot) | `pie_es` |  | Spanish customary | ≈ 0.278,635 |
-| Legua (legal) | `legua_es` |  | Spanish customary | ≈ 4179.52 |
+| Lieue de poste | `lieue_poste` | lieue de Paris | French (pre-metric) | ≈ 3,898.07 |
+| Lieue commune (1/25°) | `lieue_commune` |  | French (pre-metric) | ≈ 4,452.2 |
+| Rheinfuß (Prussian foot) | `rheinfuss` | Rhineland foot, Fuß | German (pre-metric) | ≈ 0.31385 |
+| Rute (Prussian) | `rute_pr` |  | German (pre-metric) | ≈ 3.7662 |
+| Meile (Prussian mile) | `meile_pr` |  | German (pre-metric) | ≈ 7,532.4 |
+| Elle (Prussian) | `elle_pr` |  | German (pre-metric) | ≈ 0.66694 |
+| Fuß (Viennese) | `fuss_wien` |  | German (pre-metric) | ≈ 0.316081 |
+| Klafter (Viennese) | `klafter` |  | German (pre-metric) | ≈ 1.89648 |
+| Meile (Austrian post mile) | `meile_at` |  | German (pre-metric) | ≈ 7,585.94 |
+| Geographic mile (German) | `geo_mile` |  | German (pre-metric) | ≈ 7,420.4 |
+| Arshin | `arshin` |  | Russian (pre-1924) | 0.7112 |
+| Vershok | `vershok` | vyershok | Russian (pre-1924) | 0.04445 |
+| Sazhen | `sazhen` |  | Russian (pre-1924) | 2.1336 |
+| Verst | `verst` | vyersta, versta | Russian (pre-1924) | 1,066.8 |
+| Vara (de Burgos) | `vara` |  | Spanish customary | ≈ 0.835905 |
+| Pie (Castilian foot) | `pie_es` |  | Spanish customary | ≈ 0.278635 |
+| Legua (legal) | `legua_es` |  | Spanish customary | ≈ 4,179.52 |
 | Arşın (architect's) | `arsin` |  | Ottoman | ≈ 0.758 |
-| Shaku | `shaku` |  | Japanese | 0.30,303 |
-| Sun | `sun` |  | Japanese | 0.030,303 |
-| Ken | `ken` |  | Japanese | 1.81,818 |
-| Jō | `jo` |  | Japanese | 3.0,303 |
+| Shaku | `shaku` |  | Japanese | 0.30303 |
+| Sun | `sun` |  | Japanese | 0.030303 |
+| Ken | `ken` |  | Japanese | 1.81818 |
+| Jō | `jo` |  | Japanese | 3.0303 |
 | Chō (length) | `cho_len` |  | Japanese | 109.091 |
-| Ri (Japanese) | `ri_jp` |  | Japanese | 3927.27 |
+| Ri (Japanese) | `ri_jp` |  | Japanese | 3,927.27 |
 | Chi (Qing) | `chi_qing` |  | Chinese | ≈ 0.32 |
 | Cun (Qing) | `cun_qing` |  | Chinese | ≈ 0.032 |
 | Zhang (Qing) | `zhang_qing` |  | Chinese | ≈ 3.2 |
 | Li (Qing) | `li_qing` |  | Chinese | ≈ 576 |
-| Chi (shì, modern) | `chi_shi` |  | Chinese | 0.333,333 |
+| Chi (shì, modern) | `chi_shi` |  | Chinese | 0.333333 |
 | Li (shì, modern) | `li_shi` |  | Chinese | 500 |
-| Gaz (Ilahi, Mughal) | `gaz_ilahi` |  | Indian | ≈ 0.83 |
-| Gaz (British India) | `gaz_brit` |  | Indian | 0.9,144 |
-| Hath (Indian cubit) | `hath` |  | Indian | 0.4,572 |
+| Gaz (Ilahi, Mughal) | `gaz_ilahi` |  | Indian | ≈ 0.8382 |
+| Gaz (British India) | `gaz_brit` |  | Indian | 0.9144 |
+| Hath (Indian cubit) | `hath` |  | Indian | 0.4572 |
 | Kos (koss) | `kos` |  | Indian | ≈ 3,200 |
 | Astronomical unit | `au` | AU, ua | Astronomical | 1.496 × 10<sup>11</sup> |
 | Light-year | `light_year` | ly, lightyear | Astronomical | 9.461 × 10<sup>15</sup> |
@@ -242,90 +250,89 @@ Pass a unit's ID, name or an alias. Values are in metres, square metres, litres,
 | Kiloparsec | `kiloparsec` | kpc | Astronomical | 3.086 × 10<sup>19</sup> |
 | Megaparsec | `megaparsec` | Mpc | Astronomical | 3.086 × 10<sup>22</sup> |
 | Planck length | `planck_length` | lP | Planck (natural units) | ≈ 1.616 × 10<sup>-35</sup> |
-| Smoot | `smoot` |  | Novelty | 1.7,018 |
-| Drurr | `drurr` |  | Lilliputian (fictional) | ≈ 0.00,181,429 |
-| Glumgluff | `glumgluff` |  | Lilliputian (fictional) | ≈ 0.0,261,257 |
-| Blustrug | `blustrug` |  | Lilliputian (fictional) | ≈ 3.86,243 |
-| Ranga (full pace) | `ranga` | rangar, Numenorean pace | Númenórean (fictional) | ≈ 0.9,652 |
-| Man-high | `man_high` |  | Númenórean (fictional) | ≈ 1.9,304 |
-| Lár (Númenórean league) | `lar` | lar, lárar | Númenórean (fictional) | ≈ 4,826 |
-| 'uj | `uj` | uj, ujmey | Klingon (fictional) | ≈ 0.35 |
-| 'uj'a' | `uj_a` | uj'a', uja | Klingon (fictional) | ≈ 3.15 |
-| Kellicam (qelI'qam) | `kellicam` | qelI'qam, qeliqam, kellicams | Klingon (fictional) | ≈ 2,000 |
-| Loghqam | `loghqam` |  | Klingon (fictional) | ≈ 1.183 × 10<sup>16</sup> |
+| Smoot | `smoot` |  | Novelty | 1.7018 |
+| Drurr | `drurr` |  | Lilliputian (fictional) (fictional) | ≈ 0.00181429 |
+| Glumgluff | `glumgluff` |  | Lilliputian (fictional) (fictional) | ≈ 0.0261257 |
+| Blustrug | `blustrug` |  | Lilliputian (fictional) (fictional) | ≈ 3.86243 |
+| Ranga (full pace) | `ranga` | rangar, Numenorean pace | Númenórean (fictional) (fictional) | ≈ 0.9652 |
+| Man-high | `man_high` |  | Númenórean (fictional) (fictional) | ≈ 1.9304 |
+| Lár (Númenórean league) | `lar` | lar, lárar | Númenórean (fictional) (fictional) | ≈ 4,826 |
+| 'uj | `uj` | uj, ujmey | Klingon (fictional) (fictional) | ≈ 0.35 |
+| 'uj'a' | `uj_a` | uj'a', uja | Klingon (fictional) (fictional) | ≈ 3.15 |
+| Kellicam (qelI'qam) | `kellicam` | qelI'qam, qeliqam, kellicams | Klingon (fictional) (fictional) | ≈ 2,000 |
+| Loghqam | `loghqam` |  | Klingon (fictional) (fictional) | ≈ 1.183 × 10<sup>16</sup> |
 
 </details>
 
 <details>
-<summary>Area (46)</summary>
+<summary>Area (45)</summary>
 
 | Unit | ID | Also accepts | System | Value (m²) |
 |---|---|---|---|---|
 | Square metre | `sq_metre` | m² | Metric (SI) | 1 |
 | Are | `are` |  | Metric | 100 |
 | Hectare | `hectare` | ha | Metric | 10,000 |
-| Square foot | `sq_foot` | sq ft, ft² | English / Imperial / US customary | 0.092,903 |
-| Square yard | `sq_yard` |  | English / Imperial / US customary | 0.836,127 |
-| Square rod / perch | `sq_rod` | perch (area), pole (area) | English / Imperial / US customary | 25.2,929 |
-| Rood | `rood` |  | English / Imperial / US customary | 1011.71 |
-| Acre | `acre` |  | English / Imperial / US customary | 4046.86 |
-| Square (roofing) | `square_roof` |  | English / Imperial / US customary | 9.2,903 |
-| Square mile | `sq_mile` |  | English / Imperial / US customary | 2.59 × 10<sup>6</sup> |
-| Section | `section` |  | English / Imperial / US customary | 2.59 × 10<sup>6</sup> |
+| Square foot | `sq_foot` | sq ft, ft² | English / Imperial / US customary | 0.092903 |
+| Square yard | `sq_yard` |  | English / Imperial / US customary | 0.836127 |
+| Square rod / perch | `sq_rod` | perch (area), pole (area) | English / Imperial / US customary | 25.2929 |
+| Rood | `rood` |  | English / Imperial / US customary | 1,011.71 |
+| Acre | `acre` |  | English / Imperial / US customary | 4,046.86 |
+| Square (roofing) | `square_roof` |  | English / Imperial / US customary | 9.2903 |
+| Square mile | `sq_mile` |  | English / Imperial / US customary | 2.58999e+06 |
+| Section | `section` |  | English / Imperial / US customary | 2.58999e+06 |
 | Quarter section | `quarter_section` |  | English / Imperial / US customary | 647,497 |
 | Township (survey) | `township` |  | English / Imperial / US customary | 9.324 × 10<sup>7</sup> |
-| Hide | `hide` |  | Anglo-Saxon / medieval English | ≈ 485,623 |
+| Hide | `hide` |  | Anglo-Saxon / medieval English | 485,623 |
 | Carucate / ploughland | `carucate` |  | Anglo-Saxon / medieval English | ≈ 485,623 |
-| Virgate / yardland | `virgate` |  | Medieval English | ≈ 121,406 |
-| Oxgang / bovate | `oxgang` |  | Medieval English | ≈ 60702.8 |
+| Virgate / yardland | `virgate` |  | Medieval English | 121,406 |
+| Oxgang / bovate | `oxgang` |  | Medieval English | ≈ 60,702.8 |
 | Acre (Scots) | `acre_scots` |  | Scottish | ≈ 5,067 |
-| Acre (Irish / plantation) | `acre_irish` |  | Irish | 6555.24 |
-| Square perch (Irish) | `sq_perch_irish` |  | Irish | 40.9,702 |
-| Jugerum | `jugerum` | iugerum | Ancient Roman | ≈ 2523.34 |
-| Square pes | `sq_pes` |  | Ancient Roman | ≈ 0.087,616 |
-| Heredium | `heredium` |  | Ancient Roman | ≈ 5046.68 |
+| Acre (Irish / plantation) | `acre_irish` |  | Irish | 6,555.24 |
+| Square perch (Irish) | `sq_perch_irish` |  | Irish | 40.9702 |
+| Jugerum | `jugerum` | iugerum | Ancient Roman | ≈ 2,523.34 |
+| Square pes | `sq_pes` |  | Ancient Roman | ≈ 0.087616 |
+| Heredium | `heredium` |  | Ancient Roman | ≈ 5,046.68 |
 | Centuria (land) | `centuria` |  | Ancient Roman | ≈ 504,668 |
 | Plethron (area) | `plethron_sq` |  | Ancient Greek | ≈ 948.64 |
-| Setat / aroura | `setat` | aroura, arura | Ancient Egyptian | ≈ 2741.57 |
-| Arpent (de Paris) | `arpent` |  | French (pre-metric) | ≈ 3418.86 |
-| Arpent d'ordonnance (des eaux et forêts) | `arpent_ordonnance` |  | French (pre-metric) | ≈ 5107.2 |
-| Morgen (Prussian) | `morgen_pr` |  | German (pre-metric) | ≈ 2553.22 |
-| Morgen (Dutch / Rhineland) | `morgen_nl` |  | Dutch | ≈ 8,516 |
-| Joch (Austrian) | `joch` | Katastraljoch, hold (Hungarian) | German (pre-metric) | ≈ 5754.64 |
-| Desyatina | `desyatina` |  | Russian (pre-1924) | 10925.4 |
-| Square sazhen | `sq_sazhen` |  | Russian (pre-1924) | 4.55,225 |
-| Fanega (land, Castile) | `fanega_land` |  | Spanish customary | ≈ 6439.6 |
-| Tsubo | `tsubo` |  | Japanese | 3.30,579 |
-| Se | `se` |  | Japanese | 99.1,736 |
+| Setat / aroura | `setat` | aroura, arura | Ancient Egyptian | ≈ 2,741.57 |
+| Arpent (de Paris) | `arpent` |  | French (pre-metric) | ≈ 3,418.86 |
+| Arpent d'ordonnance (des eaux et forêts) | `arpent_ordonnance` |  | French (pre-metric) | ≈ 5,107.2 |
+| Morgen (Prussian) | `morgen_pr` |  | German (pre-metric) | ≈ 2,553.22 |
+| Morgen (Dutch / Cape) | `morgen_nl` |  | Dutch | ≈ 8,565.32 |
+| Joch (Austrian) | `joch` | Katastraljoch, hold (Hungarian) | German (pre-metric) | ≈ 5,754.64 |
+| Desyatina | `desyatina` |  | Russian (pre-1924) | 10,925.4 |
+| Square sazhen | `sq_sazhen` |  | Russian (pre-1924) | 4.55225 |
+| Tsubo | `tsubo` |  | Japanese | 3.30579 |
+| Se | `se` |  | Japanese | 99.1736 |
 | Tan | `tan` |  | Japanese | 991.736 |
-| Chō (area) | `cho_area` |  | Japanese | 9917.36 |
+| Chō (area) | `cho_area` |  | Japanese | 9,917.36 |
 | Mu (Qing) | `mu_qing` |  | Chinese | ≈ 614.4 |
-| Square chi (Qing) | `sq_chi_qing` |  | Chinese | ≈ 0.1,024 |
+| Square chi (Qing) | `sq_chi_qing` |  | Chinese | ≈ 0.1024 |
 | Mu (shì, modern) | `mu_shi` | mou | Chinese | 666.667 |
-| Qing (area) | `qing_area` |  | Chinese | 66666.7 |
+| Qing (area) | `qing_area` |  | Chinese | 66,666.7 |
 | Dönüm (Ottoman) | `donum` | dunam, dunum, donum | Ottoman | ≈ 919.3 |
 | Dunam (metric) | `dunam_metric` |  | Metric-derived | 1,000 |
-| Bigha | `bigha` |  | Indian | ≈ 1337.8 |
+| Bigha | `bigha` |  | Indian | ≈ 1,337.8 |
 | Planck area | `planck_area` |  | Planck (natural units) | ≈ 2.612 × 10<sup>-70</sup> |
 
 </details>
 
 <details>
-<summary>Volume (97)</summary>
+<summary>Volume (95)</summary>
 
 | Unit | ID | Also accepts | System | Value (L) |
 |---|---|---|---|---|
 | Litre | `litre` | liter, L | Metric | 1 |
-| Cubic inch | `cu_inch` |  | English / Imperial / US customary | 0.0,163,871 |
-| Cubic foot | `cu_foot` |  | English / Imperial / US customary | 28.3,168 |
-| Gallon (US / wine / Queen Anne) | `gal_us` | wine gallon, Queen Anne gallon | English / Imperial / US customary | 3.78,541 |
-| Quart (US liquid) | `qt_us` |  | English / Imperial / US customary | 0.946,353 |
-| Pint (US liquid) | `pt_us` |  | English / Imperial / US customary | 0.473,176 |
-| Cup (US) | `cup_us` |  | English / Imperial / US customary | 0.236,588 |
-| Gill (US) | `gill_us` |  | English / Imperial / US customary | 0.118,294 |
-| Fluid ounce (US) | `floz_us` |  | English / Imperial / US customary | 0.0,295,735 |
-| Tablespoon (US) | `tbsp_us` |  | English / Imperial / US customary | 0.0,147,868 |
-| Teaspoon (US) | `tsp_us` |  | English / Imperial / US customary | 0.00,492,892 |
+| Cubic inch | `cu_inch` |  | English / Imperial / US customary | 0.0163871 |
+| Cubic foot | `cu_foot` |  | English / Imperial / US customary | 28.3168 |
+| Gallon (US / wine / Queen Anne) | `gal_us` | wine gallon, Queen Anne gallon | English / Imperial / US customary | 3.78541 |
+| Quart (US liquid) | `qt_us` |  | English / Imperial / US customary | 0.946353 |
+| Pint (US liquid) | `pt_us` |  | English / Imperial / US customary | 0.473176 |
+| Cup (US) | `cup_us` |  | English / Imperial / US customary | 0.236588 |
+| Gill (US) | `gill_us` |  | English / Imperial / US customary | 0.118294 |
+| Fluid ounce (US) | `floz_us` |  | English / Imperial / US customary | 0.0295735 |
+| Tablespoon (US) | `tbsp_us` |  | English / Imperial / US customary | 0.0147868 |
+| Teaspoon (US) | `tsp_us` |  | English / Imperial / US customary | 0.00492892 |
 | Barrel (petroleum) | `barrel_oil` | bbl | English / Imperial / US customary | 158.987 |
 | Tun (wine) | `tun` |  | English / Imperial / US customary | 953.924 |
 | Pipe / butt (wine) | `pipe` | butt | English / Imperial / US customary | 476.962 |
@@ -333,187 +340,183 @@ Pass a unit's ID, name or an alias. Values are in metres, square metres, litres,
 | Hogshead (wine) | `hogshead_wine` |  | English / Imperial / US customary | 238.481 |
 | Tierce | `tierce` |  | English / Imperial / US customary | 158.987 |
 | Barrel (wine) | `barrel_wine` |  | English / Imperial / US customary | 119.24 |
-| Rundlet | `rundlet` |  | English / Imperial / US customary | 68.1,374 |
-| Gallon (ale, pre-1824) | `gal_ale` |  | English / Imperial / US customary | 4.62,115 |
-| Gallon (imperial) | `gal_imp` |  | English / Imperial / US customary | 4.54,609 |
-| Quart (imperial) | `qt_imp` |  | English / Imperial / US customary | 1.13,652 |
-| Pint (imperial) | `pt_imp` |  | English / Imperial / US customary | 0.568,261 |
-| Gill (imperial) | `gill_imp` |  | English / Imperial / US customary | 0.142,065 |
-| Fluid ounce (imperial) | `floz_imp` |  | English / Imperial / US customary | 0.0,284,131 |
-| Fluid drachm (imperial) | `fldr_imp` | fluid dram | English / Imperial / US customary | 0.00,355,163 |
+| Rundlet | `rundlet` |  | English / Imperial / US customary | 68.1374 |
+| Gallon (ale, pre-1824) | `gal_ale` |  | English / Imperial / US customary | 4.62115 |
+| Gallon (imperial) | `gal_imp` |  | English / Imperial / US customary | 4.54609 |
+| Quart (imperial) | `qt_imp` |  | English / Imperial / US customary | 1.13652 |
+| Pint (imperial) | `pt_imp` |  | English / Imperial / US customary | 0.568261 |
+| Gill (imperial) | `gill_imp` |  | English / Imperial / US customary | 0.142065 |
+| Fluid ounce (imperial) | `floz_imp` |  | English / Imperial / US customary | 0.0284131 |
+| Fluid drachm (imperial) | `fldr_imp` | fluid dram | English / Imperial / US customary | 0.00355163 |
 | Minim (imperial) | `minim_imp` |  | English / Imperial / US customary | 5.919 × 10<sup>-5</sup> |
 | Barrel (beer, imperial) | `barrel_beer` |  | English / Imperial / US customary | 163.659 |
 | Hogshead (beer) | `hogshead_beer` |  | English / Imperial / US customary | 245.489 |
-| Kilderkin | `kilderkin` |  | English / Imperial / US customary | 81.8,296 |
-| Firkin (beer) | `firkin` |  | English / Imperial / US customary | 40.9,148 |
-| Pin | `pin` |  | English / Imperial / US customary | 20.4,574 |
-| Bushel (Winchester / US) | `bu_us` |  | English / Imperial / US customary | 35.2,391 |
-| Peck (US) | `pk_us` |  | English / Imperial / US customary | 8.80,977 |
-| Gallon (US dry) | `galdry_us` |  | English / Imperial / US customary | 4.40,488 |
-| Quart (US dry) | `qtdry_us` |  | English / Imperial / US customary | 1.10,122 |
-| Bushel (imperial) | `bu_imp` |  | English / Imperial / US customary | 36.3,687 |
-| Peck (imperial) | `pk_imp` |  | English / Imperial / US customary | 9.09,218 |
+| Kilderkin | `kilderkin` |  | English / Imperial / US customary | 81.8296 |
+| Firkin (beer) | `firkin` |  | English / Imperial / US customary | 40.9148 |
+| Pin | `pin` |  | English / Imperial / US customary | 20.4574 |
+| Bushel (Winchester / US) | `bu_us` |  | English / Imperial / US customary | 35.2391 |
+| Peck (US) | `pk_us` |  | English / Imperial / US customary | 8.80977 |
+| Gallon (US dry) | `galdry_us` |  | English / Imperial / US customary | 4.40488 |
+| Quart (US dry) | `qtdry_us` |  | English / Imperial / US customary | 1.10122 |
+| Bushel (imperial) | `bu_imp` |  | English / Imperial / US customary | 36.3687 |
+| Peck (imperial) | `pk_imp` |  | English / Imperial / US customary | 9.09218 |
 | Quarter (grain) | `quarter_vol` |  | English / Imperial / US customary | 290.95 |
-| Chaldron (coal) | `chaldron` |  | English / Imperial / US customary | 1309.27 |
+| Chaldron (coal) | `chaldron` |  | English / Imperial / US customary | 1,309.27 |
 | Pint (Scots) | `pint_scots` | joug | Scottish | ≈ 1.696 |
-| Boll (Scots, wheat) | `boll` |  | Scottish | ≈ 145.4 |
-| Firlot (Scots, wheat) | `firlot` |  | Scottish | ≈ 36.35 |
-| Amphora (quadrantal) | `amphora_rom` |  | Ancient Roman | ≈ 25.9,343 |
-| Culleus | `culleus` |  | Ancient Roman | ≈ 518.687 |
-| Congius | `congius` |  | Ancient Roman | ≈ 3.24,179 |
-| Sextarius | `sextarius` |  | Ancient Roman | ≈ 0.540,299 |
-| Hemina | `hemina` |  | Ancient Roman | ≈ 0.270,149 |
-| Cyathus | `cyathus` |  | Ancient Roman | ≈ 0.0,450,249 |
-| Modius | `modius` |  | Ancient Roman | ≈ 8.64,478 |
-| Metretes (Attic) | `metretes` | amphora (Greek) | Ancient Greek | ≈ 39.4 |
-| Chous | `chous` |  | Ancient Greek | ≈ 3.28,333 |
-| Kotyle | `kotyle` |  | Ancient Greek | ≈ 0.273,611 |
-| Kyathos | `kyathos` |  | Ancient Greek | ≈ 0.0,456,019 |
-| Medimnos (Attic) | `medimnos` |  | Ancient Greek | ≈ 52.5 |
-| Choinix | `choinix` |  | Ancient Greek | ≈ 1.09,375 |
+| Firlot (Scots) | `firlot` |  | Scottish | ≈ 35 |
+| Boll (Scots) | `boll` |  | Scottish | ≈ 140 |
+| Amphora (quadrantal) | `amphora_rom` |  | Ancient Roman | ≈ 25.9344 |
+| Congius | `congius` |  | Ancient Roman | ≈ 3.2418 |
+| Sextarius | `sextarius` |  | Ancient Roman | ≈ 0.5403 |
+| Hemina | `hemina` |  | Ancient Roman | ≈ 0.27015 |
+| Cyathus | `cyathus` |  | Ancient Roman | ≈ 0.045025 |
+| Modius | `modius` |  | Ancient Roman | ≈ 8.6448 |
+| Metretes (Attic) | `metretes` | amphora (Greek) | Ancient Greek | ≈ 39.3 |
+| Chous | `chous` |  | Ancient Greek | ≈ 3.275 |
+| Kotyle | `kotyle` |  | Ancient Greek | ≈ 0.272917 |
+| Kyathos | `kyathos` |  | Ancient Greek | ≈ 0.0454861 |
+| Medimnos (Attic) | `medimnos` |  | Ancient Greek | ≈ 52.4 |
+| Choinix | `choinix` |  | Ancient Greek | ≈ 1.09167 |
 | Bath | `bath` |  | Biblical / Talmudic | ≈ 22 |
 | Ephah | `ephah` |  | Biblical / Talmudic | ≈ 22 |
 | Homer / kor | `homer` | kor, cor | Biblical / Talmudic | ≈ 220 |
-| Seah | `seah` | measure (KJV) | Biblical / Talmudic | ≈ 7.33,333 |
+| Seah | `seah` | measure (KJV) | Biblical / Talmudic | ≈ 7.33333 |
 | Omer | `omer` |  | Biblical / Talmudic | ≈ 2.2 |
-| Kab / cab | `kab` |  | Biblical / Talmudic | ≈ 1.22,222 |
-| Hin | `hin` |  | Biblical / Talmudic | ≈ 3.66,667 |
-| Log | `log` |  | Biblical / Talmudic | ≈ 0.305,556 |
-| Pinte (de Paris) | `pinte` |  | French (pre-metric) | ≈ 0.931,389 |
-| Chopine | `chopine` |  | French (pre-metric) | ≈ 0.465,695 |
-| Velte | `velte` |  | French (pre-metric) | ≈ 7.45,111 |
-| Muid (wine, Paris) | `muid_vin` |  | French (pre-metric) | ≈ 268.24 |
-| Boisseau (de Paris) | `boisseau` |  | French (pre-metric) | ≈ 13.008 |
-| Minot | `minot` |  | French (pre-metric) | ≈ 39.024 |
-| Setier (grain, Paris) | `setier` |  | French (pre-metric) | ≈ 156.096 |
-| Muid (grain, Paris) | `muid_grain` |  | French (pre-metric) | ≈ 1873.15 |
+| Kab / cab | `kab` |  | Biblical / Talmudic | ≈ 1.22222 |
+| Hin | `hin` |  | Biblical / Talmudic | ≈ 3.66667 |
+| Log | `log` |  | Biblical / Talmudic | ≈ 0.305556 |
+| Pinte (de Paris) | `pinte` |  | French (pre-metric) | ≈ 0.9521 |
+| Chopine | `chopine` |  | French (pre-metric) | ≈ 0.47605 |
+| Velte | `velte` |  | French (pre-metric) | ≈ 7.6168 |
+| Muid (wine, Paris) | `muid_vin` |  | French (pre-metric) | ≈ 274.205 |
+| Boisseau (de Paris) | `boisseau` |  | French (pre-metric) | ≈ 12.695 |
+| Minot | `minot` |  | French (pre-metric) | ≈ 38.085 |
+| Setier (grain, Paris) | `setier` |  | French (pre-metric) | ≈ 152.34 |
+| Muid (grain, Paris) | `muid_grain` |  | French (pre-metric) | ≈ 1,828.08 |
 | Quart (Prussian) | `quart_pr` |  | German (pre-metric) | ≈ 1.145 |
 | Eimer (Prussian) | `eimer_pr` |  | German (pre-metric) | ≈ 68.7 |
 | Scheffel (Prussian) | `scheffel_pr` |  | German (pre-metric) | ≈ 54.96 |
-| Maß (Austrian) | `mass_at` | Mass | German (pre-metric) | ≈ 1.415 |
+| Maß (Austrian) | `mass_at` | Mass | German (pre-metric) | ≈ 1.41777 |
 | Maß (Bavarian) | `mass_by` |  | German (pre-metric) | ≈ 1.069 |
-| Vedro | `vedro` |  | Russian (pre-1924) | ≈ 12.2,994 |
-| Shtof | `shtof` |  | Russian (pre-1924) | ≈ 1.22,994 |
-| Charka | `charka` |  | Russian (pre-1924) | ≈ 0.122,994 |
+| Vedro | `vedro` |  | Russian (pre-1924) | ≈ 12.2994 |
+| Shtof | `shtof` |  | Russian (pre-1924) | ≈ 1.22994 |
+| Charka | `charka` |  | Russian (pre-1924) | ≈ 0.122994 |
 | Bochka | `bochka` |  | Russian (pre-1924) | ≈ 491.976 |
-| Chetvert (dry) | `chetvert` |  | Russian (pre-1924) | ≈ 209.91 |
-| Chetverik | `chetverik` |  | Russian (pre-1924) | ≈ 26.2,387 |
+| Chetvert (dry) | `chetvert` | chyetvyert' | Russian (pre-1924) | ≈ 209.91 |
+| Chetverik | `chetverik` | chyetvyerik | Russian (pre-1924) | ≈ 26.2387 |
 | Fanega (dry, Castile) | `fanega` |  | Spanish customary | ≈ 55.5 |
 | Celemín | `celemin` |  | Spanish customary | ≈ 4.625 |
 | Cántara / arroba (wine) | `cantara` |  | Spanish customary | ≈ 16.133 |
-| Azumbre | `azumbre` |  | Spanish customary | ≈ 2.01,662 |
 | Kile (Istanbul) | `kile` |  | Ottoman | ≈ 37 |
 | Koku | `koku` |  | Japanese | 180.391 |
-| To | `to_jp` |  | Japanese | 18.0,391 |
-| Shō | `sho` |  | Japanese | 1.80,391 |
-| Gō | `go` |  | Japanese | 0.180,391 |
-| Sheng (Qing) | `sheng_qing` |  | Chinese | ≈ 1.0,355 |
+| To | `to_jp` |  | Japanese | 18.0391 |
+| Shō | `sho` |  | Japanese | 1.80391 |
+| Gō | `go` |  | Japanese | 0.180391 |
+| Sheng (Qing) | `sheng_qing` |  | Chinese | ≈ 1.0355 |
 | Dou (Qing) | `dou_qing` | peck (Chinese) | Chinese | ≈ 10.355 |
 | Shi / dan (volume, Qing) | `shi_vol` |  | Chinese | ≈ 103.55 |
 | Planck volume | `planck_volume` |  | Planck (natural units) | ≈ 4.222 × 10<sup>-102</sup> |
-| Tlho'ren | `tlhoren` | tlho'ren | Klingon (fictional) | ≈ 1 |
+| Tlho'ren | `tlhoren` | tlho'ren | Klingon (fictional) (fictional) | ≈ 1 |
 
 </details>
 
 <details>
-<summary>Mass (87)</summary>
+<summary>Mass (85)</summary>
 
 | Unit | ID | Also accepts | System | Value (kg) |
 |---|---|---|---|---|
 | Kilogram | `kilogram` | kg | Metric (SI) | 1 |
-| Pound (avoirdupois) | `lb` | lb, pound | English / Imperial / US customary | 0.453,592 |
-| Ounce (avoirdupois) | `oz` | oz | English / Imperial / US customary | 0.0,283,495 |
-| Dram (avoirdupois) | `dram_avdp` | dr | English / Imperial / US customary | 0.00,177,185 |
+| Pound (avoirdupois) | `lb` | lb, pound | English / Imperial / US customary | 0.453592 |
+| Ounce (avoirdupois) | `oz` | oz | English / Imperial / US customary | 0.0283495 |
+| Dram (avoirdupois) | `dram_avdp` | dr | English / Imperial / US customary | 0.00177185 |
 | Grain | `grain` | gr | English / Imperial / US customary | 6.48 × 10<sup>-5</sup> |
-| Stone | `stone` | st | English / Imperial / US customary | 6.35,029 |
-| Quarter (weight) | `quarter_mass` |  | English / Imperial / US customary | 12.7,006 |
-| Hundredweight (long) | `cwt_long` | cwt | English / Imperial / US customary | 50.8,023 |
-| Hundredweight (short) | `cwt_short` |  | English / Imperial / US customary | 45.3,592 |
-| Ton (long) | `ton_long` | imperial ton | English / Imperial / US customary | 1016.05 |
+| Stone | `stone` | st | English / Imperial / US customary | 6.35029 |
+| Quarter (weight) | `quarter_mass` |  | English / Imperial / US customary | 12.7006 |
+| Hundredweight (long) | `cwt_long` | cwt | English / Imperial / US customary | 50.8023 |
+| Hundredweight (short) | `cwt_short` |  | English / Imperial / US customary | 45.3592 |
+| Ton (long) | `ton_long` | imperial ton | English / Imperial / US customary | 1,016.05 |
 | Ton (short) | `ton_short` |  | English / Imperial / US customary | 907.185 |
 | Tonne (metric ton) | `tonne` |  | Metric | 1,000 |
-| Clove (wool) | `clove` |  | English / Imperial / US customary | 3.17,515 |
-| Tod (wool) | `tod` |  | English / Imperial / US customary | 12.7,006 |
+| Clove (wool) | `clove` |  | English / Imperial / US customary | 3.17515 |
+| Tod (wool) | `tod` |  | English / Imperial / US customary | 12.7006 |
 | Sack (wool) | `sack_wool` |  | English / Imperial / US customary | 165.108 |
-| Pound (troy) | `lb_troy` |  | English / Imperial / US customary | 0.373,242 |
-| Ounce (troy) | `oz_troy` | ozt | English / Imperial / US customary | 0.0,311,035 |
-| Pennyweight | `dwt` | dwt | English / Imperial / US customary | 0.00,155,517 |
-| Tower pound | `lb_tower` |  | English / Imperial / US customary | 0.349,914 |
-| Merchants' pound | `lb_merchant` |  | English / Imperial / US customary | 0.437,393 |
-| Scruple (apothecaries') | `scruple` |  | English / Imperial / US customary | 0.00,129,598 |
-| Drachm (apothecaries') | `drachm_ap` | dram (apothecaries') | English / Imperial / US customary | 0.00,388,793 |
+| Pound (troy) | `lb_troy` |  | English / Imperial / US customary | 0.373242 |
+| Ounce (troy) | `oz_troy` | ozt | English / Imperial / US customary | 0.0311035 |
+| Pennyweight | `dwt` | dwt | English / Imperial / US customary | 0.00155517 |
+| Tower pound | `lb_tower` |  | English / Imperial / US customary | 0.349914 |
+| Merchants' pound | `lb_merchant` | mercantile pound | English / Imperial / US customary | 0.437393 |
+| Scruple (apothecaries') | `scruple` |  | English / Imperial / US customary | 0.00129598 |
+| Drachm (apothecaries') | `drachm_ap` | dram (apothecaries') | English / Imperial / US customary | 0.00388793 |
 | Carat (metric) | `carat` | ct | Metric | 2 × 10<sup>-4</sup> |
-| Pound (Scots troy) | `lb_scots_troy` |  | Scottish | ≈ 0.4,944 |
-| Tron pound (Scots) | `lb_tron` |  | Scottish | ≈ 0.6 |
-| Livre (poids de marc) | `livre_poids` |  | French (pre-metric) | ≈ 0.489,506 |
-| Marc (French) | `marc_fr` |  | French (pre-metric) | ≈ 0.244,753 |
-| Once (French) | `once_fr` |  | French (pre-metric) | ≈ 0.0,305,941 |
-| Gros | `gros_fr` |  | French (pre-metric) | ≈ 0.00,382,426 |
+| Tron pound (Scots) | `lb_tron` | trone pound | Scottish | ≈ 0.6 |
+| Livre (poids de marc) | `livre_poids` |  | French (pre-metric) | ≈ 0.489506 |
+| Marc (French) | `marc_fr` |  | French (pre-metric) | ≈ 0.244753 |
+| Once (French) | `once_fr` |  | French (pre-metric) | ≈ 0.0305941 |
+| Gros | `gros_fr` |  | French (pre-metric) | ≈ 0.00382426 |
 | Grain (French) | `grain_fr` |  | French (pre-metric) | ≈ 5.311 × 10<sup>-5</sup> |
-| Quintal (French, old) | `quintal_fr` |  | French (pre-metric) | ≈ 48.9,506 |
-| Cologne mark | `cologne_mark` |  | German (pre-metric) | ≈ 0.233,856 |
-| Pfund (Prussian, 1816) | `pfund_pr` |  | German (pre-metric) | ≈ 0.467,711 |
-| Lot (Prussian) | `lot_pr` |  | German (pre-metric) | ≈ 0.014,616 |
+| Quintal (French, old) | `quintal_fr` |  | French (pre-metric) | ≈ 48.9506 |
+| Cologne mark | `cologne_mark` |  | German (pre-metric) | ≈ 0.233856 |
+| Pfund (Prussian, 1816) | `pfund_pr` |  | German (pre-metric) | ≈ 0.467711 |
+| Lot (Prussian) | `lot_pr` | Loth | German (pre-metric) | ≈ 0.014616 |
 | Zollpfund | `zollpfund` |  | German (pre-metric) | 0.5 |
 | Zentner | `zentner` | hundredweight (German) | German (pre-metric) | 50 |
-| Pfund (Viennese) | `pfund_wien` |  | German (pre-metric) | ≈ 0.56,006 |
-| Funt | `funt` | Russian pound | Russian (pre-1924) | ≈ 0.409,512 |
-| Pud | `pud` | pood | Russian (pre-1924) | ≈ 16.3,805 |
+| Pfund (Viennese) | `pfund_wien` |  | German (pre-metric) | ≈ 0.56 |
+| Funt | `funt` | Russian pound | Russian (pre-1924) | ≈ 0.409512 |
+| Pud | `pud` | pood | Russian (pre-1924) | ≈ 16.3805 |
 | Berkovets | `berkovets` |  | Russian (pre-1924) | ≈ 163.805 |
-| Lot (Russian) | `lot_ru` |  | Russian (pre-1924) | ≈ 0.0,127,973 |
-| Zolotnik | `zolotnik` |  | Russian (pre-1924) | ≈ 0.00,426,575 |
+| Lot (Russian) | `lot_ru` |  | Russian (pre-1924) | ≈ 0.0127973 |
+| Zolotnik | `zolotnik` |  | Russian (pre-1924) | ≈ 0.00426575 |
 | Dolya | `dolya` |  | Russian (pre-1924) | ≈ 4.443 × 10<sup>-5</sup> |
-| Libra (Castilian) | `libra_es` |  | Spanish customary | ≈ 0.4,601 |
-| Onza | `onza_es` |  | Spanish customary | ≈ 0.0,287,563 |
-| Arroba (Castilian) | `arroba_es` |  | Spanish customary | ≈ 11.5,025 |
+| Libra (Castilian) | `libra_es` |  | Spanish customary | ≈ 0.4601 |
+| Onza | `onza_es` |  | Spanish customary | ≈ 0.0287563 |
+| Arroba (Castilian) | `arroba_es` |  | Spanish customary | ≈ 11.5025 |
 | Quintal (Castilian) | `quintal_es` |  | Spanish customary | ≈ 46.01 |
 | Arrátel | `arratel` |  | Portuguese customary | ≈ 0.459 |
 | Arroba (Portuguese) | `arroba_pt` |  | Portuguese customary | ≈ 14.688 |
-| Okka / oka | `okka` | oke, oka | Ottoman | ≈ 1.2,829 |
-| Dirhem | `dirhem` |  | Ottoman | ≈ 0.00,320,725 |
-| Kantar / qintar | `kantar` |  | Ottoman | ≈ 56.4,476 |
-| Monme | `monme` |  | Japanese | 0.00,375 |
+| Okka / oka | `okka` | oke, oka | Ottoman | ≈ 1.2829 |
+| Dirhem | `dirhem` |  | Ottoman | ≈ 0.00320725 |
+| Kantar / qintar | `kantar` |  | Ottoman | ≈ 56.4476 |
+| Monme | `monme` |  | Japanese | 0.00375 |
 | Kin | `kin` | catty (Japanese) | Japanese | 0.6 |
 | Kan / kanme | `kan` |  | Japanese | 3.75 |
-| Liang / tael (Qing) | `liang_qing` | tael | Chinese | ≈ 0.0,373 |
-| Qian / mace (Qing) | `qian_qing` |  | Chinese | ≈ 0.00,373 |
-| Jin / catty (Qing) | `jin_qing` | catty | Chinese | ≈ 0.5,968 |
+| Liang / tael (Qing) | `liang_qing` | tael | Chinese | ≈ 0.0373 |
+| Qian / mace (Qing) | `qian_qing` |  | Chinese | ≈ 0.00373 |
+| Jin / catty (Qing) | `jin_qing` | catty | Chinese | ≈ 0.5968 |
 | Dan / picul | `picul` |  | Chinese | ≈ 59.68 |
-| Catty (Hong Kong legal) | `catty_hk` |  | Chinese | 0.60,479 |
+| Catty (Hong Kong legal) | `catty_hk` |  | Chinese | 0.60479 |
 | Jin (shì, modern) | `jin_shi` |  | Chinese | 0.5 |
-| Tola | `tola` |  | Indian | 0.0,116,638 |
+| Tola | `tola` |  | Indian | 0.0116638 |
 | Ratti | `ratti` |  | Indian | 1.215 × 10<sup>-4</sup> |
-| Seer | `seer` |  | Indian | 0.933,104 |
-| Maund (Indian government) | `maund` | mun | Indian | 37.3,242 |
-| Maund (Bengal factory) | `maund_bengal` |  | Indian | ≈ 33.8,688 |
-| Libra (Roman pound) | `libra_rom` |  | Ancient Roman | ≈ 0.3,275 |
-| Uncia (Roman ounce) | `uncia_mass` |  | Ancient Roman | ≈ 0.0,272,917 |
-| Scripulum | `scripulum` |  | Ancient Roman | ≈ 0.00,113,715 |
-| Siliqua | `siliqua` |  | Ancient Roman | ≈ 1.895 × 10<sup>-4</sup> |
+| Seer | `seer` |  | Indian | 0.933104 |
+| Maund (Indian government) | `maund` | mun | Indian | 37.3242 |
+| Libra (Roman pound) | `libra_rom` |  | Ancient Roman | ≈ 0.3289 |
+| Uncia (Roman ounce) | `uncia_mass` |  | Ancient Roman | ≈ 0.0274083 |
+| Scripulum | `scripulum` | scrupulum | Ancient Roman | ≈ 0.00114201 |
+| Siliqua | `siliqua` |  | Ancient Roman | ≈ 1.903 × 10<sup>-4</sup> |
 | Mina (Attic) | `mina_att` |  | Ancient Greek | ≈ 0.431 |
-| Drachma (weight) | `drachma_mass` |  | Ancient Greek | ≈ 0.00,431 |
+| Drachma (weight) | `drachma_mass` |  | Ancient Greek | ≈ 0.00431 |
 | Obol (weight) | `obol_mass` |  | Ancient Greek | ≈ 7.183 × 10<sup>-4</sup> |
 | Talent (Attic) | `talent_att` |  | Ancient Greek | ≈ 25.86 |
-| Shekel (biblical) | `shekel_bib` |  | Biblical / Talmudic | ≈ 0.0,114 |
-| Gerah | `gerah` |  | Biblical / Talmudic | ≈ 5.7 × 10<sup>-4</sup> |
-| Beka | `beka` |  | Biblical / Talmudic | ≈ 0.0,057 |
-| Mina / maneh (biblical) | `mina_bib` |  | Biblical / Talmudic | ≈ 0.57 |
-| Talent / kikkar (biblical) | `talent_bib` |  | Biblical / Talmudic | ≈ 34.2 |
-| Shekel (Mesopotamian) | `shekel_meso` |  | Mesopotamian | ≈ 0.00,833 |
-| Še (grain) | `se_grain` |  | Mesopotamian | ≈ 4.628 × 10<sup>-5</sup> |
-| Mina (Mesopotamian) | `mina_meso` |  | Mesopotamian | ≈ 0.4,998 |
-| Talent (Mesopotamian) | `talent_meso` |  | Mesopotamian | ≈ 29.988 |
+| Shekel (biblical) | `shekel_bib` |  | Biblical / Talmudic | ≈ 0.011 |
+| Gerah | `gerah` |  | Biblical / Talmudic | ≈ 5.5 × 10<sup>-4</sup> |
+| Beka | `beka` | bekah | Biblical / Talmudic | ≈ 0.0055 |
+| Mina / maneh (biblical) | `mina_bib` |  | Biblical / Talmudic | ≈ 0.55 |
+| Talent / kikkar (biblical) | `talent_bib` |  | Biblical / Talmudic | ≈ 33 |
+| Shekel (Mesopotamian) | `shekel_meso` |  | Mesopotamian | ≈ 0.0084 |
+| Še (grain) | `se_grain` |  | Mesopotamian | ≈ 4.667 × 10<sup>-5</sup> |
+| Mina (Mesopotamian) | `mina_meso` |  | Mesopotamian | ≈ 0.504 |
+| Talent (Mesopotamian) | `talent_meso` |  | Mesopotamian | ≈ 30.24 |
 | Deben (New Kingdom) | `deben` |  | Ancient Egyptian | ≈ 0.091 |
-| Kite / qedet | `kite` |  | Ancient Egyptian | ≈ 0.0,091 |
+| Kite / qedet | `kite` |  | Ancient Egyptian | ≈ 0.0091 |
 | Planck mass | `planck_mass` | mP | Planck (natural units) | ≈ 2.176 × 10<sup>-8</sup> |
-| Cheb | `cheb` |  | Klingon (fictional) | ≈ 2.25 |
+| Cheb | `cheb` |  | Klingon (fictional) (fictional) | ≈ 2.25 |
 
 </details>
 
 <details>
 <summary>Count (11)</summary>
 
-| Unit | ID | Also accepts | System | Value (each) |
+| Unit | ID | Also accepts | System | Value (items) |
 |---|---|---|---|---|
 | Each (unit) | `each` |  | Counting | 1 |
 | Dozen | `dozen` |  | Counting | 12 |

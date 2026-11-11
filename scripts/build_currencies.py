@@ -22,18 +22,20 @@ US_CPI = {int(k): v for k, v in S["us_cpi"].items()}
 USD_PER_GBP = {int(k): v for k, v in S["usd_per_gbp"].items()}
 M14 = {c: {int(y): v for y, v in ys.items()} for c, ys in S["per_gbp_annual_m14"].items()}
 FFR_1938 = {int(k): v for k, v in S["ffr_per_gbp_1938_1960"].items()}
+# foreign currency per US dollar, by year (see scripts/extract_series.py for each dataset)
+per_usd = lambda key: {c: {int(y): v for y, v in ys.items()} for c, ys in S[key].items()}
+MW_PER_USD, FRED_PER_USD = per_usd("mw_per_usd"), per_usd("fred_per_usd")
+JST_PER_USD, PWT_PER_USD = per_usd("jst_per_usd"), per_usd("pwt_per_usd")
+GSR = {int(k): v for k, v in S["gold_silver_ratio"].items()}  # ounces of silver per ounce of gold, 1687-
+FRED_IDS = {"CAD": "AEXCAUS", "MXN": "AEXMXUS", "GBP": "AEXUSUK", "EUR": "AEXUSEU", "JPY": "AEXJPUS",
+            "CNY": "AEXCHUS", "INR": "AEXINUS", "CHF": "AEXSZUS", "SEK": "AEXSDUS"}
 
 BASE_YEAR = 2025
-# Fed G.5A annual averages (foreign currency per USD, except GBP/EUR/AUD which are USD per unit)
-G5A = {
-    2015: {"GBP": 1.5284, "EUR": 1.1096, "JPY": 121.05, "CNY": 6.2827, "INR": 64.11},
-    2020: {"GBP": 1.2829, "EUR": 1.1410, "JPY": 106.7754, "CNY": 6.9042, "INR": 74.1429,
-           "CHF": 0.9389, "SEK": 9.2167, "CAD": 1.3422},
-    2025: {"GBP": 1.3192, "EUR": 1.1306, "JPY": 149.5686, "CNY": 7.1875, "INR": 87.1468,
-           "CHF": 0.8305, "SEK": 9.8060, "CAD": 1.3973},
-}
-GBP_USD_2025 = G5A[2025]["GBP"]
+GBP_USD_2025 = round(1 / FRED_PER_USD["GBP"][BASE_YEAR], 4)
 EURO_FIXED = {"FRF": 6.55957, "DEM": 1.95583, "ITL": 1936.27, "ESP": 166.386, "NLG": 2.20371}
+EURO_FIXED_QUOTE = {"FRF": ("wp_franc", "ERM_fixed_rate = 6.55957 F"), "DEM": ("wp_dm", "ERM_fixed_rate = DM 1.95583"),
+                    "ITL": ("wp_lira", "The conversion rate was Lit 1,936.27 to the euro"),
+                    "ESP": ("wp_peseta", "ERM_fixed_rate = Pts 166.386"), "NLG": ("wp_guilder", "ERM_fixed_rate = ƒ2.20371")}
 
 # ---------------------------------------------------------------- sources
 BOE_XLSX = ("https://www.bankofengland.co.uk/-/media/boe/files/statistics/research-datasets/"
@@ -52,16 +54,16 @@ SRC = {
                 "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7bt/mm23"),
     "mpls_cpi": ("Federal Reserve Bank of Minneapolis, 'Consumer Price Index, 1800-' (annual averages)",
                  "https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1800-"),
-    "g5a_2025": ("Federal Reserve Board, G.5A Foreign Exchange Rates (Annual), release of 5 Jan 2026",
-                 "https://www.federalreserve.gov/releases/g5a/current/default.htm"),
-    "g5a_2020": ("Federal Reserve Board, G.5A Foreign Exchange Rates (Annual), release of 4 Jan 2021",
-                 "https://www.federalreserve.gov/releases/g5a/20210104/default.htm"),
-    "g5a_2015": ("Federal Reserve Board, G.5A Foreign Exchange Rates (Annual), release of 4 Jan 2016",
-                 "https://www.federalreserve.gov/releases/g5a/20160104/"),
+    "jst": ("Òscar Jordà, Moritz Schularick & Alan M. Taylor, Macrohistory Database, release 6 — 'xrusd' (local currency per US dollar)",
+            "https://www.macrohistory.net/database/"),
+    "pwt": ("Robert C. Feenstra, Robert Inklaar & Marcel P. Timmer, Penn World Table 10.01 — 'xr' (national currency per US dollar)",
+            "https://www.rug.nl/ggdc/productivity/pwt/"),
     "mw_fx": ("Lawrence H. Officer, 'Exchange Rates Between the United States Dollar and Forty-one "
               "Currencies', MeasuringWorth", "https://www.measuringworth.com/datasets/exchangeglobal/"),
-    "mw_gsr": ("Lawrence H. Officer & Samuel H. Williamson, 'The Price of Gold, 1257-present' and "
-               "gold/silver price ratio, MeasuringWorth", "https://www.measuringworth.com/datasets/gold/"),
+    "mw_gsr": ("Lawrence H. Officer & Samuel H. Williamson, 'The Price of Gold, 1257-Present', MeasuringWorth — "
+               "gold/silver price ratio (1687-)", "https://www.measuringworth.com/datasets/gold/"),
+    "ratio_pre1687": ("Estimated gold:silver value ratio before 1687 (no dataset; background in Wikipedia, 'Bimetallism')",
+                      WP + "Bimetallism"),
     "wp_penny": ("Wikipedia, 'Penny (English coin)' — mint weights and fineness by reign", WP + "Penny_(English_coin)"),
     "wp_ster": ("Wikipedia, '£sd' — pounds, shillings and pence", WP + "%C2%A3sd"),
     "wp_guinea": ("Wikipedia, 'Guinea (coin)'", WP + "Guinea_(coin)"),
@@ -74,47 +76,51 @@ SRC = {
     "wp_spdollar": ("Wikipedia, 'Spanish dollar' — weight/fineness standards 1497, 1728, 1772", WP + "Spanish_dollar"),
     "newton1717": ("Isaac Newton, letter concerning the state of the gold and silver coins (21 Sept 1717) — "
                    "The Newton Project catalogue", "https://newtonproject.ox.ac.uk/catalogue/record/MINT01000"),
-    "wp_livre": ("Wikipedia, 'Livre tournois' — 80.88 g silver (1266), 4.505 g (1726), 4.45 g (1785)", WP + "Livre_tournois"),
+    "wp_livre": ("Wikipedia, 'Livre tournois' — 80.88 g silver (1262), 4.50516 g (1726)", WP + "Livre_tournois"),
     "wp_ecu": ("Wikipedia, 'Écu' and 'Louis d'or' — official valuations in livres", WP + "Louis_d%27or"),
     "spooner": ("Frank C. Spooner, 'The International Economy and Monetary Movements in France, 1493-1725' "
                 "(Harvard Economic Studies 138, 1972) — livre tournois silver equivalents (library record)", "https://buscador.unsam.edu.ar/Record/23851"),
     "wp_franc": ("Wikipedia, 'French franc' — germinal franc 4.5 g silver; 1928 Poincaré franc; 1960 new franc", WP + "French_franc"),
-    "wp_lmu": ("Wikipedia, 'Latin Monetary Union' — franc/lira/Swiss franc parity, 25.22 per £", WP + "Latin_Monetary_Union"),
+    "wp_lmu": ("Wikipedia, 'Latin Monetary Union' — the LMU franc of 4.5 g silver or 0.290322 g gold", WP + "Latin_Monetary_Union"),
     "wp_thaler": ("Wikipedia, 'Prussian thaler' — Graumann 14-thaler standard (16.704 g fine silver)", WP + "Prussian_thaler"),
-    "wp_vthaler": ("Wikipedia, 'Vereinsthaler' and 'South German gulden' — 1857 standard; 1 thaler = 1¾ gulden", WP + "Vereinsthaler"),
-    "wp_goldmark": ("Wikipedia, 'German gold mark' — 1 mark = 0.358423 g fine gold; 20.43 per £", WP + "German_gold_mark"),
-    "wp_papiermark": ("Wikipedia, 'German Papiermark' — wartime and 1919-1923 depreciation", WP + "German_Papiermark"),
+    "wp_vthaler": ("Wikipedia, 'Vereinsthaler' — introduced 1857", WP + "Vereinsthaler"),
+    "wp_goldmark": ("Wikipedia, 'German mark (1871)' — 2790 marks per kg of gold; 20.43 marks per £", WP + "German_mark_(1871)"),
+    "wp_papiermark": ("Wikipedia, 'Papiermark' — wartime and 1919-1923 depreciation", WP + "Papiermark"),
     "wp_reichsmark": ("Wikipedia, 'Reichsmark' — 4.20 RM per US dollar parity", WP + "Reichsmark"),
-    "wp_dm": ("Wikipedia, 'Deutsche Mark' — 4.20 DM/$ (1949), revaluations 1961, 1969", WP + "Deutsche_Mark"),
+    "wp_dm": ("Wikipedia, 'Deutsche Mark'", WP + "Deutsche_Mark"),
     "wp_augulden": ("Wikipedia, 'Austro-Hungarian gulden' — Conventionsfuß (11.69 g) and 1857 (11.11 g) standards", WP + "Austro-Hungarian_gulden"),
-    "wp_krone": ("Wikipedia, 'Austro-Hungarian krone' — 1 krone = 0.304878 g gold", WP + "Austro-Hungarian_krone"),
-    "wp_florin": ("Wikipedia, 'Florin (Italian coin)' — 3.54 g of 24-carat gold, 1252-1533", WP + "Florin_(Italian_coin)"),
-    "wp_ducat": ("Wikipedia, 'Ducat' — Venetian zecchino, 3.545 g of .997 gold, 1284-1797", WP + "Ducat"),
+    "wp_krone": ("Wikipedia, 'Austro-Hungarian krone' — 3280 kronen per kg of gold (1892)", WP + "Austro-Hungarian_krone"),
+    "wp_florin": ("Wikipedia, 'Florin' — 3.54 g of nominally pure gold, 1252-1533", WP + "Florin"),
+    "wp_ducat": ("Wikipedia, 'Ducat' — Venetian ducat, 3.545 g of 99.47% fine gold, from 1284", WP + "Ducat"),
     "spufford": ("Peter Spufford, 'Handbook of Medieval Exchange' (Royal Historical Society, 1986) — "
                  "Florentine and Venetian money-of-account rates (library record)", "https://ci.nii.ac.jp/ncid/BA00272230?l=en"),
-    "wp_guilder": ("Wikipedia, 'Dutch guilder' — 1681 (9.613 g silver), 1840, and 1875 gold standards", WP + "Dutch_guilder"),
-    "wp_ruble": ("Wikipedia, 'Russian ruble' — 1704 ruble, 1764 (18 g) standard, assignats, 1897 Witte gold reform", WP + "Russian_ruble"),
+    "wp_guilder": ("Wikipedia, 'Dutch guilder' — silver content by period (table 'Value of gulden, grams'); 1875 gold standard", WP + "Dutch_guilder"),
+    "wp_ruble": ("Wikipedia, 'Russian ruble' — 1704 decimal ruble; 1897 gold ruble of 0.77424 g", WP + "Russian_ruble"),
     "wp_assign": ("Wikipedia, 'Russian assignation ruble' — discount of paper to silver, 1769-1843", WP + "Russian_assignation_ruble"),
     "wp_ryo": ("Wikipedia, 'Ryō' and 'Koban (coin)' — gold content of successive koban issues", WP + "Ry%C5%8D"),
     "boj_ryo": ("Bank of Japan Institute for Monetary and Economic Studies, Currency Museum FAQ "
                 "'江戸時代の1両は今のいくら？' (How much was one ryō worth in today's money?)",
                 "https://www.imes.boj.or.jp/cm/history/historyfaq/answer.html"),
     "wp_yen": ("Wikipedia, 'Japanese yen' — 1871 yen (24.26 g silver), 1897 gold yen (0.75 g), 360/$ (1949-71)", WP + "Japanese_yen"),
-    "wp_tael": ("Wikipedia, 'Tael' — Kuping/Haikwan tael ≈ 37.3-37.8 g of silver", WP + "Tael"),
+    "wp_tael": ("Wikipedia, 'Liang (mass)' — the tael (liang) of 37.301 g", WP + "Liang_(mass)"),
     "wp_cash": ("Wikipedia, 'Cash (Chinese coin)' — strings of 1000 cash; market cash/silver rates", WP + "Cash_(Chinese_coin)"),
-    "wp_rmb": ("Wikipedia, 'Renminbi' — 2.46/$ (1955-71), unification 1994", WP + "Renminbi"),
-    "wp_rupee": ("Wikipedia, 'Indian rupee' — 1835 Company rupee (165 grains fine), 1s 4d (1899), 1s 6d (1927)", WP + "Indian_rupee"),
+    "wp_rmb": ("Wikipedia, 'Renminbi'", WP + "Renminbi"),
+    "wp_rupee": ("Wikipedia, 'Indian rupee' — silver rupee exchange rate in pence, 1850-1900", WP + "Indian_rupee"),
+    "wp_icc": ("Wikipedia, 'Indian Currency Committee' — 15 rupees per sovereign (1s 4d per rupee) from 1899", WP + "Indian_Currency_Committee"),
     "wp_rupee_hist": ("Wikipedia, 'History of the rupee' — Mughal rupiya ~178 grains", WP + "History_of_the_rupee"),
     "wp_akce": ("Wikipedia, 'Akçe' — silver content 1450-1800 (after Malanima 2009); 120 akçe = 1 kuruş", WP + "Ak%C3%A7e"),
     "pamuk": ("Şevket Pamuk, 'A Monetary History of the Ottoman Empire' (Cambridge UP, 2000)", "https://doi.org/10.1017/CBO9780511497452"),
-    "wp_kurus": ("Wikipedia, 'Kuruş' and 'Ottoman lira' — 1844 reform: 100 kuruş = 1 lira = 6.614 g gold", WP + "Kuru%C5%9F"),
-    "wp_moidore": ("Wikipedia, 'Moidore' — 4800 réis; current in Britain at 27s", WP + "Moidore"),
-    "wp_real_pt": ("Wikipedia, 'Portuguese real' — milréis; 1854 gold standard (£1 = 4500 réis)", WP + "Portuguese_real"),
+    "wp_kurus": ("Wikipedia, 'Kuruş' — 100 kuruş to the gold lira of 1844", WP + "Kuru%C5%9F"),
+    "wp_ottoman_lira": ("Wikipedia, 'Ottoman lira' — LT 1 = 6.61519 g pure gold (1844-1881 bimetallic, then gold)", WP + "Ottoman_lira"),
+    "wp_moidore": ("Wikipedia, 'Moidore' — 4,800 réis (1688-1800); single moidore ≈ 13s 5½d, double ≈ 27s in England", WP + "Moidore"),
+    "wp_real_pt": ("Wikipedia, 'Portuguese real' — gold peça of 13.145 g revalued 1826, 1837, 1854; 1854 milréis = 1.62585 g gold", WP + "Portuguese_real"),
     "wp_lira": ("Wikipedia, 'Italian lira' — LMU parity, 1927 'quota 90', 625/$ (1949-71)", WP + "Italian_lira"),
     "wp_peseta": ("Wikipedia, 'Spanish peseta'", WP + "Spanish_peseta"),
     "wp_chf": ("Wikipedia, 'Swiss franc'", WP + "Swiss_franc"),
-    "wp_sek": ("Wikipedia, 'Swedish krona' — Scandinavian Monetary Union, 18.16 per £", WP + "Swedish_krona"),
+    "wp_sek": ("Wikipedia, 'Swedish krona' — Scandinavian Monetary Union: krona = 1/2480 kg of gold", WP + "Swedish_krona"),
     "wp_euro": ("Wikipedia, 'Euro' — irrevocable conversion rates of 1999", WP + "Euro"),
+    "wp_cad": ("Wikipedia, 'Canadian dollar' — gold sovereign legal tender at £1 = $4.86⅔", WP + "Canadian_dollar"),
+    "wp_mxn": ("Wikipedia, 'Mexican peso' — 1863 silver peso (24.44 g fine), 1905 gold reform, 1993 new peso", WP + "Mexican_peso"),
     "wp_usd": ("Wikipedia, 'United States dollar' — Coinage Act of 1792; dollar based on Spanish dollar", WP + "United_States_dollar"),
     "wp_bretton": ("Wikipedia, 'Bretton Woods system' — fixed parities 1945-1971", WP + "Bretton_Woods_system"),
     "wp_denarius": ("Wikipedia, 'Denarius' and 'Roman currency' — denominations and debasement", WP + "Roman_currency"),
@@ -123,7 +129,7 @@ SRC = {
                  "1800 BCE to 1300 CE', Journal of the Economic and Social History of the Orient 53 (2010) 425-462",
                  "https://doi.org/10.1163/156852010X506038"),
     "matthew": ("Matthew 20:1-16 — a day's wage for a vineyard labourer is one denarius", "https://www.biblegateway.com/passage/?search=Matthew+20%3A1-16&version=NRSVUE"),
-    "wp_solidus": ("Wikipedia, 'Solidus (coin)' — 1/72 Roman pound of gold (~4.5 g) from 309 AD", WP + "Solidus_(coin)"),
+    "wp_solidus": ("Wikipedia, 'Solidus' — 1/72 Roman pound of gold (~4.5 g) from 309 AD", WP + "Solidus"),
     "wp_greek": ("Wikipedia, 'Ancient Greek coinage' and 'Attic talent' — 6 obols = 1 drachma, 6000 drachmae = 1 talent", WP + "Ancient_Greek_coinage"),
     "loomis": ("William T. Loomis, 'Wages, Welfare Costs and Inflation in Classical Athens' (University of Michigan Press, 1998)",
                "https://press.umich.edu/Books/W/Wages-Welfare-Costs-and-Inflation-in-Classical-Athens"),
@@ -156,9 +162,18 @@ SRC = {
 }
 
 
-def src(key, reasoning):
+for _code, _sid in FRED_IDS.items():
+    SRC[f"fred_{_code.lower()}"] = (f"Federal Reserve Bank of St. Louis, FRED series {_sid} (annual averages from Federal Reserve "
+                                    f"G.5A, {min(FRED_PER_USD[_code])}-)", f"https://fred.stlouisfed.org/series/{_sid}")
+
+
+def src(key, reasoning, quote=None):
+    """A citation. `quote` is text copied from the source that states the value used (checked when the source was read)."""
     title, url = SRC[key]
-    return {"title": title, "url": url, "reasoning": reasoning}
+    s = {"title": title, "url": url, "reasoning": reasoning}
+    if quote:
+        s["quote"] = quote
+    return s
 
 
 def sig(x, n=4):
@@ -187,7 +202,7 @@ def uk_cpi_sources(y):
                    + (f"; {y} = {UK_CPI[y]}" if y > 2016 else
                       "; the BoE series shares the 2015=100 base (BoE 2016 = 100.66 vs ONS 100.7), so the two splice directly")
                    + f". Ratio {BASE_YEAR}/{y} = {m:.5g}: £1 in {y} bought what £{m:.4g} bought in {BASE_YEAR}."))
-    out.append(src("g5a_2025", f"{BASE_YEAR} annual average exchange rate ${GBP_USD_2025} per £1, used to express {BASE_YEAR} pounds in {BASE_YEAR} dollars."))
+    out.append(src("fred_gbp", f"{BASE_YEAR} annual average exchange rate ${GBP_USD_2025} per £1, used to express {BASE_YEAR} pounds in {BASE_YEAR} dollars."))
     return out
 
 
@@ -206,7 +221,8 @@ def usd_to_usd2025(y, usd):
 
 
 # --------------------------------------------------- English mint standards
-# grams of fine silver in one English penny (1d), by mint indenture
+# grams of fine silver in one English penny (1d), by mint indenture. Only the 1601 standard is stated on the cited page;
+# the earlier rows are not, so points that depend on them are labelled estimates.
 PENNY_SILVER = [  # (from_year, grams fine, note)
     (1158, 1.349, "22.5 grains sterling (.925)"),
     (1279, 1.331, "22.2 grains sterling (Edward I recoinage)"),
@@ -221,16 +237,14 @@ PENNY_SILVER = [  # (from_year, grams fine, note)
     (1544, 0.500, "effective value during the Great Debasement (coins at .750-.500 fine)"),
     (1546, 0.400, "effective value during the Great Debasement (coins at .333-.250 fine; sterling ~40% down on the Antwerp exchange)"),
     (1552, 0.4795, "8 grains sterling (Elizabethan standard, 60s per lb)"),
-    (1601, 0.464, "7.74 grains sterling (62s per troy lb, 1601-1816)"),
+    (1601, 0.464, "one troy ounce of sterling (.925) per 62 pence, 1601-1816"),
 ]
-# gold:silver ratio (by weight) used before Britain's de facto gold standard of 1717
-RATIO_PRE1717 = [(1200, 10.0), (1300, 11.0), (1350, 11.5), (1400, 11.0), (1500, 10.75),
-                 (1550, 11.3), (1600, 12.25), (1650, 14.0), (1700, 15.0), (1717, 15.2)]
-# market gold:silver ratio after 1717 (approximate annual values)
-RATIO_POST1717 = [(1717, 15.2), (1750, 14.6), (1775, 14.6), (1800, 15.7), (1850, 15.7), (1870, 15.6),
-                  (1875, 16.6), (1880, 18.0), (1885, 19.4), (1890, 19.8), (1895, 31.6), (1900, 33.3),
-                  (1905, 31.6), (1910, 38.2), (1915, 39.8), (1920, 19.8), (1925, 29.4), (1930, 53.3), (1935, 54.0)]
-GOLD_G_PER_GBP = 7.3224  # 1717-1914 (guinea of 21s / sovereign of 1817)
+PENNY_QUOTE = {1601: "the silver content of British coinage was defined to be one troy ounce of sterling silver for 62 pence"}
+# gold:silver value ratio before MeasuringWorth's series begins (1687); an estimate
+RATIO_PRE1687 = [(1200, 10.0), (1300, 11.0), (1350, 11.5), (1400, 11.0), (1500, 10.75),
+                 (1550, 11.3), (1600, 12.25), (1650, 14.0), (1687, 15.0)]
+GOLD_G_PER_GBP = 7.32238  # 1717-1914 (guinea of 21s / sovereign of 1817)
+GOLD_STD_QUOTE = "the 20-shilling gold sovereign, or £1 coin, which contained 7.32238 g fine gold"
 
 
 def interp(table, y):
@@ -250,55 +264,92 @@ def step(table, y):
     return cur
 
 
+def gold_std_src(note=""):
+    return src("wp_gold_std", f"Britain's gold standard: £1 = {GOLD_G_PER_GBP} g fine gold.{note}", GOLD_STD_QUOTE)
+
+
+def gold_silver_ratio(y):
+    """(ratio, source, from a dataset?)"""
+    if y in GSR:
+        return GSR[y], src("mw_gsr", f"Gold/silver price ratio in {y}: {GSR[y]}:1."), True
+    r = interp(RATIO_PRE1687, y)
+    return r, src("ratio_pre1687", f"Estimated gold:silver ratio in {y} ≈ {r:.2f}:1 (interpolated; the dataset starts in 1687)."), False
+
+
 def silver_gbp_per_g(y):
-    """(GBP per gram of fine silver in year y, [(source key, reasoning), ...])."""
+    """(GBP per gram of fine silver in year y, [sources], whether every step is a dataset or a checked standard)."""
     if y < 1717:
-        _, g, note = step(PENNY_SILVER, y)
-        return 1 / (g * 240), [("wp_penny", f"In {y} the English penny contained {g} g fine silver ({note}), "
-                                            f"so 1 g of silver = {1/g:.3f}d.")]
-    r = interp(RATIO_POST1717, y)
+        y0, g, note = step(PENNY_SILVER, y)
+        return 1 / (g * 240), [src("wp_penny", f"In {y} the English penny contained {g} g fine silver ({note}), "
+                                               f"so 1 g of silver = {1/g:.3f}d.", PENNY_QUOTE.get(y0))], y0 in PENNY_QUOTE
+    r, rs, _ = gold_silver_ratio(y)
     per_g = 1 / GOLD_G_PER_GBP / r
-    return per_g, [("wp_gold_std", f"Britain was on a gold standard: £1 = {GOLD_G_PER_GBP} g fine gold."),
-                   ("mw_gsr", f"Market gold:silver price ratio in {y} ≈ {r:.1f}:1, so 1 g of silver ≈ {per_g*240:.3f}d.")]
+    rs["reasoning"] += f" So 1 g of silver ≈ {per_g*240:.3f}d."
+    return per_g, [gold_std_src(), rs], True
 
 
 def gold_gbp_per_g(y):
     if y >= 1717:
-        return 1 / GOLD_G_PER_GBP, [("wp_gold_std", f"Under the British gold standard £1 = {GOLD_G_PER_GBP} g fine gold.")]
-    s, why = silver_gbp_per_g(y)
-    r = interp(RATIO_PRE1717, y)
-    return s * r, why + [("mw_gsr", f"Gold:silver value ratio in {y} ≈ {r:.2f}:1 (interpolated), so 1 g gold ≈ {s*r*240:.1f}d."),
-                         ("wp_bimet", "Background on bimetallic ratios: ~10-12:1 in the late Middle Ages, rising to ~15:1 by 1700.")]
+        return 1 / GOLD_G_PER_GBP, [gold_std_src()], True
+    s, why, ok = silver_gbp_per_g(y)
+    r, rs, from_data = gold_silver_ratio(y)
+    rs["reasoning"] += f" So 1 g gold ≈ {s*r*240:.1f}d."
+    return s * r, why + [rs], ok and from_data
 
 
 # ----------------------------------------------------------------- framework
 BAND = {"high": 1.1, "medium": 1.35, "low": 2.0, "very low": 3.0}
+# provenance: what the weakest number behind a point is
+#   dataset  — exchange rates and price indexes all read from downloaded datasets
+#   quoted   — also uses a parity, coin standard or rate quoted from the cited source (see each source's 'quote')
+#   estimate — uses at least one number that is neither: an interpolation, a reconstruction or a judgement
 
 
-def point(y, value, confidence, sources, method, low=None, high=None, provenance="computed"):
+def point(y, value, confidence, sources, method, low=None, high=None, provenance="dataset"):
     f = BAND[confidence]
     return {"year": y, "usd2025": sig(value), "low": sig(low if low is not None else value / f),
             "high": sig(high if high is not None else value * f), "confidence": confidence,
             "method": method, "provenance": provenance, "sources": sources}
 
 
-def via_gbp(y, gbp, confidence, bridge_sources, method, provenance="computed"):
+def via_gbp(y, gbp, confidence, bridge_sources, method, provenance="dataset"):
     return point(y, gbp_to_usd2025(y, gbp), confidence, bridge_sources + uk_cpi_sources(y), method,
                  provenance=provenance)
 
 
-def via_usd(y, usd, confidence, bridge_sources, method, provenance="computed"):
+def via_usd(y, usd, confidence, bridge_sources, method, provenance="dataset"):
     return point(y, usd_to_usd2025(y, usd), confidence, bridge_sources + us_cpi_sources(y), method,
                  provenance=provenance)
 
 
-def metal_point(y, grams, metal, unit, confidence, coin_src):
+def metal_point(y, grams, metal, unit, confidence, coin_src, checked):
+    """`checked`: whether the coin's metal content is quoted from its source (coin_src should then carry the quote)."""
     fn = silver_gbp_per_g if metal == "silver" else gold_gbp_per_g
-    per_g, why = fn(y)
+    per_g, why, route_ok = fn(y)
     gbp = grams * per_g
-    srcs = [coin_src(y, grams)] + [src(k, r) for k, r in why]
+    srcs = [coin_src(y, grams)] + why
     srcs[-1]["reasoning"] += f" Hence 1 {unit} ({grams:.4g} g fine {metal}) ≈ {lsd(gbp)} sterling."
-    return via_gbp(y, gbp, confidence, srcs, f"{metal} content → sterling → UK CPI")
+    return via_gbp(y, gbp, confidence, srcs, f"{metal} content → sterling → UK CPI",
+                   provenance="quoted" if checked and route_ok else "estimate")
+
+
+def gold_parity_point(y, gold_g, unit, confidence, coin_src):
+    """A unit defined in gold under the gold standard: its sterling value is its gold content ÷ the sovereign's."""
+    gbp = gold_g / GOLD_G_PER_GBP
+    return via_gbp(y, gbp, confidence, [coin_src, gold_std_src(f" Hence 1 {unit} ({gold_g:.6g} g) = £{gbp:.5g} ≈ {lsd(gbp)}; "
+                                                               f"£1 = {1/gbp:.5g} {unit}s.")],
+                   "gold parity → sterling → UK CPI", provenance="quoted")
+
+
+def standard_gbp_point(y, gbp, unit, confidence, srcs):
+    """A legal rate against sterling, quoted from its source."""
+    srcs[-1]["reasoning"] += f" Hence 1 {unit} ≈ {lsd(gbp)} sterling in {y}."
+    return via_gbp(y, gbp, confidence, srcs, "legal rate → sterling → UK CPI", provenance="quoted")
+
+
+def estimate_gbp_point(y, gbp, unit, confidence, srcs):
+    srcs[-1]["reasoning"] += f" Hence 1 {unit} ≈ {lsd(gbp)} sterling in {y}."
+    return via_gbp(y, gbp, confidence, srcs, "estimated rate → sterling → UK CPI", provenance="estimate")
 
 
 def conf_by_year(y, cuts):
@@ -314,19 +365,50 @@ def years(a, b, stepn=5):
     return list(range(a, b + 1, stepn))
 
 
+def has_fx(code, y):
+    return any(y in t.get(code, {}) for t in (FRED_PER_USD, MW_PER_USD, JST_PER_USD, PWT_PER_USD))
+
+
+def per_usd_rate(code, y):
+    """(units per US dollar, source key, dataset name), preferring FRED, then MeasuringWorth, PWT, JST.
+    JST comes last: for 1945-1960 it often gives free-market rather than official rates."""
+    for table, key, name in ((FRED_PER_USD, f"fred_{code.lower()}", "FRED"), (MW_PER_USD, "mw_fx", "MeasuringWorth"),
+                             (PWT_PER_USD, "pwt", "PWT"), (JST_PER_USD, "jst", "JST")):
+        if y in table.get(code, {}):
+            return table[code][y], key, name
+    raise KeyError((code, y))
+
+
+def fx_point(code, y, unit, confidence="high", note=""):
+    """Point from a downloaded US-dollar exchange rate."""
+    r, key, _ = per_usd_rate(code, y)
+    s = src(key, f"{y} annual average: {r:,.5g} {unit}s per US dollar → ${1/r:.5g} per {unit}." + (f" {note}" if note else ""))
+    return via_usd(y, 1 / r, confidence, [s], "exchange rate → US CPI")
+
+
+def fx_gbp_point(code, y, unit, confidence="high", note=""):
+    """Point for years up to 1910 (sterling anchor): the currency's and sterling's dollar rates from the same dataset, crossed."""
+    for table, key in ((MW_PER_USD, "mw_fx"), (JST_PER_USD, "jst")):
+        if y in table.get(code, {}) and y in table["GBP"]:
+            r, g = table[code][y], table["GBP"][y]
+            per_gbp = r / g
+            s = src(key, f"{y}: {r:.5g} {unit}s and £{g:.5g} per US dollar, so £1 = {per_gbp:.4g} {unit}s"
+                         f" and 1 {unit} ≈ {lsd(1 / per_gbp)}." + (f" {note}" if note else ""))
+            return via_gbp(y, 1 / per_gbp, confidence, [s], "exchange rate → sterling → UK CPI")
+    raise KeyError((code, y))
+
+
 def usd_per_unit_modern(code, y):
-    """USD per unit for M14/G.5A-covered currencies, with sources."""
-    if y in G5A and code in G5A[y]:
-        key = {2025: "g5a_2025", 2020: "g5a_2020", 2015: "g5a_2015"}[y]
-        r = G5A[y][code]
-        if code in ("GBP", "EUR"):
-            return r, src(key, f"{y} annual average: ${r} per {code}.")
-        return 1 / r, src(key, f"{y} annual average: {r} {code} per US dollar → ${1/r:.5g} per {code}.")
+    """USD per unit from FRED, euro conversion rates, or BoE M14 cross rates, with sources."""
+    if code in FRED_PER_USD and y in FRED_PER_USD[code]:
+        r = FRED_PER_USD[code][y]
+        return 1 / r, src(f"fred_{code.lower()}", f"{y} annual average: {r:.5g} {code} per US dollar → ${1/r:.5g} per {code}.")
     if code in EURO_FIXED and y >= 1999:
-        eur = M14["USD"][y] / M14["EUR"][y]
+        eur = 1 / FRED_PER_USD["EUR"][y]
         r = EURO_FIXED[code]
-        return eur / r, src("boe_m14", f"{y}: euro averaged ${eur:.4f} (from $/£ {M14['USD'][y]:.4f} ÷ €/£ {M14['EUR'][y]:.4f}); "
-                                       f"legacy {code} fixed at {r} per euro → ${eur/r:.5g} per {code}.")
+        k, q = EURO_FIXED_QUOTE[code]
+        return eur / r, src("fred_eur", f"{y}: euro averaged ${eur:.4f}; with {code} fixed at {r} per euro "
+                                         f"→ ${eur/r:.5g} per {code}."), src(k, f"{code} conversion rate: {r} per euro.", q)
     usd_gbp, x_gbp = M14["USD"][y], M14[code][y]
     v = usd_gbp / x_gbp
     return v, src("boe_m14", f"{y} annual averages: ${usd_gbp:.4f} per £ and {x_gbp:.5g} {code} per £ → "
@@ -334,18 +416,9 @@ def usd_per_unit_modern(code, y):
 
 
 def modern_point(code, y, unit, confidence="high", extra=None):
-    v, s = usd_per_unit_modern(code, y)
-    return via_usd(y, v, confidence, [s] + (extra or []), "exchange rate → US CPI")
-
-
-def compiled_usd_point(y, usd, unit, confidence, key, note, extra=None):
-    s = src(key, f"{note} Approximate {y} value: ${usd:.5g} per {unit}.")
-    return via_usd(y, usd, confidence, [s] + (extra or []), "exchange rate → US CPI", provenance="compiled")
-
-
-def compiled_gbp_point(y, gbp, unit, confidence, keys_notes):
-    srcs = [src(k, n + f" Hence 1 {unit} ≈ {lsd(gbp)} sterling in {y}.") for k, n in keys_notes]
-    return via_gbp(y, gbp, confidence, srcs, "parity/exchange rate → sterling → UK CPI", provenance="compiled")
+    v, *srcs = usd_per_unit_modern(code, y)
+    return via_usd(y, v, confidence, srcs + (extra or []), "exchange rate → US CPI",
+                   provenance="quoted" if len(srcs) > 1 else "dataset")
 
 
 def den(id_, name, value=None, periods=None, symbol=None, valid=None, notes=None, aliases=None):
@@ -420,15 +493,22 @@ currency("gbp", "Pound sterling", "England / Great Britain / United Kingdom", [1
 
 # --- Pound Scots
 SCOTS_RATIO = [(1370, 1.2), (1390, 2.0), (1425, 2.5), (1450, 2.5), (1475, 3.0), (1500, 3.5), (1525, 4.0),
-               (1550, 4.5), (1560, 5.0), (1575, 6.0), (1585, 8.0), (1595, 10.0), (1600, 12.0), (1707, 12.0)]
+               (1550, 4.5), (1560, 5.0), (1575, 6.0), (1585, 8.0), (1595, 10.0), (1603, 12.0), (1707, 12.0)]
 scots_series = []
 for y in years(1370, 1705):
-    r = interp(SCOTS_RATIO, y)
-    scots_series.append(compiled_gbp_point(y, 1 / r, "pound Scots", "medium" if y >= 1600 else "low", [
-        ("wp_scots", f"The pound Scots parted from sterling after c.1367 and was worth about £{r:.2g} Scots per £1 sterling "
-                     f"in {y}" + (" (fixed at 12:1 from the Union of the Crowns, 1603)." if y >= 1600 else
-                                   " (interpolated between attested ratios).")),
-        ("gemmill", "Gemmill & Mayhew document the Scots/sterling exchange through the medieval period.")]))
+    if y >= 1603:
+        scots_series.append(standard_gbp_point(y, 1 / 12, "pound Scots", "high", [src(
+            "wp_scots", "From the Union of the Crowns, £12 Scots = £1 sterling.",
+            "From 1603, the exchange rate was fixed at £12 Scots to £1 sterling.")]))
+    elif y == 1560:
+        scots_series.append(standard_gbp_point(y, 1 / 5, "pound Scots", "medium", [src(
+            "wp_scots", "£5 Scots = £1 sterling in 1560.", "By 1560, the exchange relationship had reached £5 Scots to £1 sterling.")]))
+    else:
+        r = interp(SCOTS_RATIO, y)
+        scots_series.append(estimate_gbp_point(y, 1 / r, "pound Scots", "low", [
+            src("wp_scots", "The pound Scots fell against sterling from the later 14th century; the cited page gives only the 1560 "
+                            "(5:1) and 1603 (12:1) rates."),
+            src("gemmill", f"Estimate: ≈ £{r:.2g} Scots per £1 sterling in {y}, interpolated between assumed ratios.")]))
 currency("scots", "Pound Scots", "Scotland", [1370, 1707], "pound Scots", [
     den("pound", "Pound Scots", 1, aliases=["£ Scots"]),
     den("merk", "Merk", 2 / 3, notes="13s 4d Scots; a common unit for rents and dowries."),
@@ -440,8 +520,9 @@ currency("scots", "Pound Scots", "Scotland", [1370, 1707], "pound Scots", [
 ], scots_series, "After 1603 £12 Scots = £1 sterling, so '100 merks' ≈ £5 11s sterling. Abolished by the Acts of Union 1707 "
                  "but used in Scottish accounts well into the 18th century.", successor="gbp")
 
-irish_series = [compiled_gbp_point(y, 12 / 13, "Irish pound", "medium", [
-    ("wp_irish", "Irish currency was rated at £13 Irish = £12 sterling (an Irish shilling = 13 Irish pence = 12d sterling).")])
+irish_series = [standard_gbp_point(y, 12 / 13, "Irish pound", "high", [src(
+    "wp_irish", "An English shilling passed for 13 Irish pence, so £13 Irish = £12 sterling.",
+    "In 1701, a proclamation stated one English shilling was equal to 1s. 1d. in Irish")])
     for y in years(1705, 1825)]
 currency("iep_old", "Irish pound (pre-1826)", "Ireland", [1701, 1826], "Irish pound", [
     den("pound", "Pound (Irish)", 1), den("shilling", "Shilling (Irish)", 0.05),
@@ -478,20 +559,93 @@ currency("usd", "United States dollar", "United States", [1792, None], "dollar",
                "money, 6s = $1; New York money, 8s = $1) are not modelled here.",
          aliases=["US dollar", "American dollar"])
 
+# ============================================================ CANADA
+# context for years when the market or official rate is a weaker guide to purchasing power
+CAD_NOTES = {1920: ("medium", "Canada had suspended gold convertibility in 1914; the dollar was at a post-war discount."),
+             1945: ("medium", "Wartime exchange controls; MeasuringWorth has no figures for 1942-45, so this is the JST rate."),
+             1940: ("medium", "Wartime exchange controls fixed an official rate of 1.10 per $, well below this average, so the year is uncertain.")}
+cad_series = []
+for y in years(1860, 2025):
+    if y <= 1910:
+        cad_series.append(standard_gbp_point(y, 1 / (4.86 + 2 / 300), "Canadian dollar", "high", [src(
+            "wp_cad", "The sovereign was legal tender at £1 = $4.86⅔ Canadian.",
+            "the British gold sovereign continued to remain legal tender at the rate of £1 = Can$4.86⅔")]))
+    elif has_fx("CAD", y):
+        c, n = CAD_NOTES.get(y, ("high", ""))
+        cad_series.append(fx_point("CAD", y, "Canadian dollar", c, n))
+currency("cad", "Canadian dollar", "Canada", [1858, None], "Canadian dollar", [
+    den("dollar", "Dollar", 1, symbol="$", aliases=["C$", "CA$", "buck", "loonie"],
+        notes="'Loonie' after the $1 coin of 1987, which shows a loon."),
+    den("toonie", "Toonie", 2, valid=(1996, 2100), aliases=["twonie"], notes="$2 coin from 1996."),
+    den("half_dollar", "Fifty-cent piece", 0.5),
+    den("quarter", "Quarter", 0.25),
+    den("dime", "Dime", 0.1),
+    den("nickel", "Nickel", 0.05),
+    den("cent", "Cent", 0.01, symbol="¢", valid=(1858, 2013), aliases=["penny"],
+        notes="Minting ended in 2012; cash sums are rounded to the nearest 5¢ since 2013."),
+], cad_series, "Before 1858 the Province of Canada kept accounts in 'Halifax currency' pounds (£1 = $4 Canadian), "
+               "which are not modelled here. Newfoundland had its own dollar until 1949.",
+         aliases=["CAD", "loonie"])
+
+# ============================================================ MEXICO
+MXP_SILVER_G = 24.44  # silver peso: 27.07 g at .903 fine, the old 8-real standard
+MXP_GOLD_G = 0.75     # 1905 monetary reform: peso = 75 cg fine gold (= 50 US cents)
+MXP_NOTES = {1985: ("medium", "Debt crisis: Mexico ran several official rates alongside the market rate.")}
+
+
+def mxp_src(y, g):
+    return src("wp_mxn", f"The Mexican silver peso contained {g} g fine silver, the old 8-real standard.",
+               "The post-independence silver peso contained 27.07 grams of 90.3% fine silver (24.44 g fine)")
+
+
+mxp_series = []
+for y in years(1865, 1990) + [1921]:  # 1921 is MeasuringWorth's first year for Mexico
+    if y <= 1900:
+        mxp_series.append(metal_point(y, MXP_SILVER_G, "silver", "peso", "medium", mxp_src, True))
+    elif y <= 1910:
+        mxp_series.append(gold_parity_point(y, MXP_GOLD_G, "peso", "high", src(
+            "wp_mxn", f"The 1905 reform put the peso on gold at {MXP_GOLD_G} g fine gold.",
+            "In 1905 the peso was solely defined as 0.75 g fine gold.")))
+    elif y in MW_PER_USD["MXP"]:
+        c, n = MXP_NOTES.get(y, ("high", ""))
+        mxp_series.append(fx_point("MXP", y, "peso", c, n))
+currency("mxp", "Mexican peso (1863-1992)", "Mexico", [1863, 1992], "peso", [
+    den("peso", "Peso", 1, symbol="$", aliases=["Mex$", "peso fuerte", "Mexican dollar"],
+        notes="The silver peso circulated widely in East Asia and the Americas as the 'Mexican dollar'."),
+    den("centavo", "Centavo", 0.01, symbol="¢"),
+    den("real", "Real (colloquial)", 0.125, valid=(1863, 1910), notes="Old 1/8 peso, still used in speech after decimalisation."),
+    den("toston", "Tostón", 0.5, notes="50 centavos."),
+    den("hidalgo", "Hidalgo (gold)", 10, valid=(1905, 1931), notes="Gold 10-peso coin."),
+    den("centenario", "Centenario (gold)", 50, valid=(1921, 1947), notes="Gold 50-peso coin (37.5 g fine gold); later a bullion coin."),
+], mxp_series, "1865-1900 values via the silver content; 1905-1910 via the gold peso; 1920+ via exchange rates and US CPI. "
+               "Revolution-era paper money (1913-1916) is not modelled. Before 1863 see the Spanish dollar. "
+               "Replaced in 1993 by the new peso at 1,000 to 1.", successor="mxn",
+         aliases=["old Mexican peso", "MXP"])
+
+mxn_series = [fx_point("MXN", y, "peso") for y in [1993] + years(1995, 2025)]
+currency("mxn", "Mexican peso", "Mexico", [1993, None], "peso", [
+    den("peso", "Peso", 1, symbol="$", aliases=["Mex$", "MX$", "nuevo peso", "N$"],
+        notes="Called the 'nuevo peso' in 1993-1995; 1 new peso = 1,000 old pesos."),
+    den("centavo", "Centavo", 0.01, symbol="¢"),
+    den("old_peso", "Old peso (1863-1992)", 0.001, notes="The 1993 redenomination: 1,000 old pesos = 1 new peso."),
+], mxn_series, "", aliases=["MXN"])
+
 # ============================================================ SPANISH DOLLAR
-SPD_SILVER = [(1497, 25.56, "27.47 g at .931 fine (1497 standard)"), (1728, 24.82, "27.07 g at .917 (1728)"),
-              (1772, 24.43, "27.07 g at .903 (1772)")]
+SPD_SILVER = [(1497, 25.561, "1497 standard, 0.9306 fine", "0.9306 fine (25.561 g fine silver"),
+              (1728, 24.809, "1728 standard, 0.9167 fine", "0.9167 fine (24.809 g fine silver"),
+              (1772, 24.443, "1772 standard, 0.9028 fine (actual fineness 1772-1821 may have been lower)",
+               "0.9028 fine (24.443 g fine silver")]
 
 
 def spd_src(y, g):
-    note = step(SPD_SILVER, y)[2]
-    return src("wp_spdollar", f"The 8-real piece in {y} contained {g} g fine silver: {note}.")
+    _, _, note, quote = step(SPD_SILVER, y)
+    return src("wp_spdollar", f"The 8-real piece in {y} contained {g} g fine silver ({note}).", quote)
 
 
 spd_series = []
 for y in years(1575, 1850):
     g = step(SPD_SILVER, y)[1]
-    p = metal_point(y, g, "silver", "Spanish dollar", "medium", spd_src)
+    p = metal_point(y, g, "silver", "Spanish dollar", "medium", spd_src, True)
     if y == 1715 or y == 1720:
         p["sources"].append(src("newton1717", "Newton's 1717 report found Spain's gold:silver valuation in line with Britain's, so silver-content valuation of the "
                                               "piece of eight is appropriate; the result (~4s 7d) matches the conventional 4s 6d rating."))
@@ -512,21 +666,28 @@ currency("spd", "Spanish dollar (peso, real de a ocho)", "Spain, Spanish America
          successor="usd")
 
 # ============================================================ FRANCE
-LIVRE_SILVER = [(1270, 80.9), (1290, 75), (1300, 40), (1310, 55), (1330, 50), (1340, 30), (1350, 22), (1360, 18),
+LIVRE_SILVER = [(1270, 80.88), (1290, 75), (1300, 40), (1310, 55), (1330, 50), (1340, 30), (1350, 22), (1360, 18),
                 (1370, 25), (1400, 22), (1420, 12), (1430, 20), (1450, 24), (1475, 22), (1500, 21), (1525, 18),
                 (1550, 17), (1575, 14), (1600, 11.7), (1625, 9.8), (1641, 8.4), (1675, 8.3), (1690, 7.5),
-                (1700, 7.0), (1710, 5.6), (1715, 5.6), (1720, 3.0), (1725, 4.505), (1785, 4.505), (1786, 4.45), (1795, 4.45)]
+                (1700, 7.0), (1710, 5.6), (1715, 5.6), (1720, 3.0), (1726, 4.50516), (1795, 4.50516)]
+LIVRE_QUOTE = {1270: "established the livre tournois as 20 sous tournois, or 80.88 grams of fine silver",
+               1726: "in 1726, in a devaluation under Louis XV, as 4.50516 grams of fine silver"}
+
+
+def livre_quote(y):
+    return LIVRE_QUOTE[1270] if y == 1270 else LIVRE_QUOTE[1726] if y >= 1726 else None
 
 
 def livre_src(y, g):
-    exact = y in (1270, 1725, 1730) or y >= 1726
-    return src("wp_livre" if exact else "spooner",
-               f"The livre tournois in {y} represented about {g:.3g} g fine silver"
-               + (" (attested standard)." if exact else
-                  " (interpolated from the silver equivalents of coin issues; medieval values fluctuated sharply with royal mutations)."))
+    q = livre_quote(y)
+    return src("wp_livre" if q else "spooner",
+               f"The livre tournois in {y} represented {g:.6g} g fine silver." if q else
+               f"Estimate: the livre tournois in {y} represented about {g:.3g} g fine silver, interpolated between assumed values "
+               "(medieval values fluctuated sharply with royal mutations).", q)
 
 
-livre_series = [metal_point(y, interp(LIVRE_SILVER, y), "silver", "livre", "medium" if y >= 1550 else "low", livre_src)
+livre_series = [metal_point(y, interp(LIVRE_SILVER, y), "silver", "livre", "medium" if y >= 1550 else "low", livre_src,
+                            livre_quote(y) is not None)
                 for y in years(1270, 1795)]
 currency("livre", "Livre tournois", "France", [1262, 1795], "livre", [
     den("livre", "Livre (tournois)", 1, aliases=["franc (as money of account)", "pound (French)"],
@@ -547,25 +708,18 @@ currency("livre", "Livre tournois", "France", [1262, 1795], "livre", [
                  "frequent royal debasements and recoinages not captured at 5-year resolution. John Law's paper system "
                  "(1719-20) makes 1720 especially uncertain.", successor="frf")
 
-FRF_GBP = {1915: 26.4, 1920: 52.6, 1925: 102.4, 1930: 123.9, 1935: 74.6}
 frf_series = []
 for y in years(1800, 1955):
-    if y <= 1910:
+    if y < 1870:
         frf_series.append(metal_point(y, 4.5, "silver", "franc", "high",
-                                      lambda y, g: src("wp_franc", "The germinal franc (1803) contained 4.5 g fine silver; "
-                                                                   "gold napoléon of 20 fr. = 5.806 g fine gold (ratio 15.5).")) if y < 1870 else
-                          compiled_gbp_point(y, 1 / 25.2215, "franc", "high", [
-                              ("wp_lmu", "Under the gold standard / Latin Monetary Union, £1 = 25.2215 French francs (mint parity).")]))
-    elif y in FRF_GBP:
-        r = FRF_GBP[y]
-        usd = USD_PER_GBP[y] / r
-        frf_series.append(via_usd(y, usd, "medium", [
-            src("mw_fx", f"{y} average ≈ {r} francs per £ (wartime/post-war float; Poincaré stabilisation 1926-28 at 124.21/£)."),
-            src("boe_fx", f"{y} average ${USD_PER_GBP[y]:.4f} per £ → ${usd:.4g} per franc.")],
-            "exchange rate → US CPI", provenance="compiled"))
-    elif y == 1940:
-        frf_series.append(compiled_usd_point(y, 1 / 43.8, "franc", "low", "mw_fx",
-                                             "1940 rate ≈ 43.8 francs per US dollar before occupation (rates then administered)."))
+                                      lambda y, g: src("wp_franc", "The germinal franc contained 4.5 g fine silver.",
+                                                       "worth 4.5 g silver or 9/31 g = 0.29032 g gold (ratio 15.5)"), True))
+    elif y <= 1910:
+        frf_series.append(gold_parity_point(y, 0.290322, "franc", "high", src(
+            "wp_lmu", "Under the Latin Monetary Union the franc was 0.290322 g fine gold.", "One LMU franc represented 4.5 g of fine silver or 0.290322 g of fine gold.")))
+    elif y <= 1940:
+        frf_series.append(fx_point("FRF", y, "franc", "low" if y == 1940 else "medium",
+                                   "Occupation from June 1940; later rates were administered." if y == 1940 else ""))
     else:
         r = FFR_1938[y]
         usd = USD_PER_GBP[y] / r
@@ -600,8 +754,8 @@ currency("frf_new", "French new franc (1960-2001)", "France", [1960, 2001], "fra
 
 # ============================================================ GERMAN LANDS
 thaler_series = [metal_point(y, 16.704, "silver", "Prussian thaler", "medium",
-                             lambda y, g: src("wp_thaler", "Graumann standard of 1750: 14 thalers per Cologne mark of fine silver = 16.704 g; "
-                                                           "the 1857 Vereinsthaler (16.667 g) was essentially identical."))
+                             lambda y, g: src("wp_thaler", "Graumann standard of 1750: 14 thalers per Cologne mark of fine silver.",
+                                              "with 14 thalers issued to a Cologne Mark of fine silver, or 16.704 g per thaler"), True)
                  for y in years(1750, 1870)]
 currency("thaler", "Prussian / North German thaler", "Prussia and North Germany", [1750, 1873], "thaler", [
     den("thaler", "Thaler", 1, aliases=["Reichsthaler", "Taler", "Vereinsthaler", "rix-dollar"]),
@@ -616,16 +770,15 @@ currency("thaler", "Prussian / North German thaler", "Prussia and North Germany"
 ], thaler_series, "Valued by silver content. Other German states used thalers and gulden of similar silver standards.",
          successor="mark")
 
-MARK_USD = {1915: (1 / 4.92, "medium", "1915 average ≈ 4.9 marks per $ (par 4.198)."),
-            1920: (1 / 57.0, "low", "1920 average ≈ 57 paper marks per $ (rate swung between ~39 and ~99 during the year).")}
 mark_series = []
 for y in years(1875, 1920):
     if y <= 1910:
-        mark_series.append(compiled_gbp_point(y, 1 / 20.43, "mark", "high", [
-            ("wp_goldmark", "Gold mark: 1 mark = 0.358423 g fine gold, so £1 = 20.43 marks.")]))
+        mark_series.append(gold_parity_point(y, 1 / 2.79, "mark", "high", src(
+            "wp_goldmark", "The mark was defined as 1/2790 kg of fine gold.", "with 2790 marks equal to 1 kilogram of pure gold")))
     else:
-        v, c, n = MARK_USD[y]
-        mark_series.append(compiled_usd_point(y, v, "mark", c, "wp_papiermark", n, [src("mw_fx", "Annual average dollar rate of the mark.")]))
+        mark_series.append(fx_point("MARK", y, "mark", "low" if y == 1920 else "medium",
+                                    "Paper marks; the rate swung widely during the year." if y == 1920 else
+                                    "Wartime paper mark (gold convertibility suspended)."))
 currency("mark", "German mark (Goldmark / Papiermark)", "German Empire", [1873, 1923], "mark", [
     den("mark", "Mark", 1, symbol="M", aliases=["Goldmark", "Papiermark", "Reichsmark (loosely)"]),
     den("pfennig", "Pfennig", 0.01),
@@ -635,10 +788,8 @@ currency("mark", "German mark (Goldmark / Papiermark)", "German Empire", [1873, 
 ], mark_series, "Hyperinflation: by November 1923 a US dollar cost 4.2 trillion marks; the Rentenmark replaced it at 1 per "
                 "1,000,000,000,000 marks. Years 1921-1924 are deliberately omitted.", successor="reichsmark")
 
-RM_USD = {1925: (1 / 4.20, "high", "Reichsmark parity 4.20 RM per $."), 1930: (1 / 4.20, "high", "Reichsmark parity 4.20 RM per $."),
-          1935: (1 / 2.49, "medium", "After the 1934 dollar devaluation, ≈ 2.49 RM per $ (exchange controls)."),
-          1940: (1 / 2.50, "low", "Official ≈ 2.50 RM per $; currency inconvertible under exchange control.")}
-rm_series = [compiled_usd_point(y, v, "Reichsmark", c, "wp_reichsmark", n) for y, (v, c, n) in RM_USD.items()]
+RM_NOTES = {1935: ("medium", "Under exchange controls."), 1940: ("low", "Inconvertible under exchange controls.")}
+rm_series = [fx_point("RM", y, "Reichsmark", *RM_NOTES.get(y, ("high", ""))) for y in years(1925, 1940)]
 currency("reichsmark", "Reichsmark", "Germany", [1924, 1948], "Reichsmark", [
     den("rm", "Reichsmark", 1, symbol="RM", aliases=["Rentenmark"]), den("rpf", "Reichspfennig", 0.01),
 ], rm_series, "1945 omitted: no meaningful exchange rate (occupation rate 10 RM/$; black-market cigarette economy).",
@@ -647,8 +798,7 @@ currency("reichsmark", "Reichsmark", "Germany", [1924, 1948], "Reichsmark", [
 dem_series = []
 for y in years(1950, 2000):
     if y < 1965:
-        r = {1950: 4.20, 1955: 4.20, 1960: 4.17}[y]
-        dem_series.append(compiled_usd_point(y, 1 / r, "Deutsche Mark", "high", "wp_dm", f"{y} parity ≈ {r} DM per $ (Bretton Woods)."))
+        dem_series.append(fx_point("DEM", y, "Deutsche Mark"))
     else:
         dem_series.append(modern_point("DEM", y, "Deutsche Mark"))
 currency("dem", "Deutsche Mark", "West Germany / Germany", [1948, 2001], "Deutsche Mark", [
@@ -657,11 +807,13 @@ currency("dem", "Deutsche Mark", "West Germany / Germany", [1948, 2001], "Deutsc
 ], dem_series, "Replaced by the euro at 1.95583 DM per euro.", successor="eur")
 
 # ============================================================ AUSTRIA
-AUG_SILVER = [(1760, 11.69, "Conventionsfuß of 1753: 20 gulden per Cologne mark = 11.69 g"),
-              (1858, 11.11, "Austrian standard of 1857: 45 gulden per Zollpfund = 11.11 g")]
+AUG_SILVER = [(1760, 11.6928, "Conventionsfuß of 1753: 1/20 Cologne mark of silver",
+               "equivalent to 1/20 of a Cologne mark of silver, or 11.6928 g"),
+              (1858, 11.111, "Austrian standard of 1857",
+               "1857: Vereinsthaler = 1.5 Fl. | 9.524 g || silver | 11.111 g || silver")]
 aug_series = [metal_point(y, step(AUG_SILVER, y)[1], "silver", "gulden", "medium",
-                          lambda y, g: src("wp_augulden", f"{step(AUG_SILVER, y)[2]}. Paper gulden often traded at a discount "
-                                                          "to silver (severely c.1800-1816 and 1848-1878)."))
+                          lambda y, g: src("wp_augulden", f"{step(AUG_SILVER, y)[2]}: {g} g fine silver. Paper gulden often traded "
+                                                          "at a discount to silver (severely c.1800-1816 and 1848-1878).", step(AUG_SILVER, y)[3]), True)
               for y in years(1760, 1890)]
 currency("aut_gulden", "Austrian gulden (florin)", "Habsburg monarchy", [1754, 1892], "gulden", [
     den("gulden", "Gulden / florin", 1, symbol="fl.", aliases=["florin", "fl."]),
@@ -671,8 +823,8 @@ currency("aut_gulden", "Austrian gulden (florin)", "Habsburg monarchy", [1754, 1
     den("krone", "Krone (1892 conversion)", 0.5),
 ], aug_series, "Valued at the silver standard; paper money traded below silver in war periods, so these are upper values for those years.",
          successor="aut_krone")
-krone_series = [compiled_gbp_point(y, 1 / 24.02, "krone", "high", [
-    ("wp_krone", "1 krone = 0.304878 g fine gold, giving £1 = 24.02 kronen.")]) for y in years(1895, 1910)]
+krone_series = [gold_parity_point(y, 1 / 3.28, "krone", "high", src(
+    "wp_krone", "The krone was defined as 1/3280 kg of fine gold.", "1 kg gold = 3280 Kr.")) for y in years(1895, 1910)]
 currency("aut_krone", "Austro-Hungarian krone", "Austria-Hungary", [1892, 1918], "krone", [
     den("krone", "Krone / korona", 1, symbol="K"), den("heller", "Heller / fillér", 0.01), den("gulden", "Gulden (old)", 2),
 ], krone_series, "Lost most of its value during and after WWI; post-1914 values not modelled.")
@@ -680,8 +832,9 @@ currency("aut_krone", "Austro-Hungarian krone", "Austria-Hungary", [1892, 1918],
 # ============================================================ ITALY
 FLORENCE_LIRA = [(1252, 1252, 1.0), (1253, 1299, 2.0), (1300, 1349, 3.0), (1350, 1399, 3.5), (1400, 1449, 4.0),
                  (1450, 1474, 4.8), (1475, 1499, 5.8), (1500, 1533, 7.0)]
-florin_series = [metal_point(y, 3.53, "gold", "florin", "low" if y < 1400 else "medium",
-                             lambda y, g: src("wp_florin", "The florin was struck at 3.54 g of (nearly) pure gold throughout 1252-1533."))
+florin_series = [metal_point(y, 54 * 0.06479891, "gold", "florin", "low" if y < 1400 else "medium",
+                             lambda y, g: src("wp_florin", f"The florin held 54 grains ({g:.4g} g) of nominally pure gold, unchanged 1252-1533.",
+                                              "It had 54 grains"), True)
                  for y in years(1255, 1530)]
 currency("florin_fl", "Florentine florin", "Florence; international trade coin", [1252, 1533], "florin", [
     den("florin", "Florin (fiorino d'oro)", 1, aliases=["fiorino", "gold florin"]),
@@ -694,8 +847,9 @@ currency("florin_fl", "Florentine florin", "Florence; international trade coin",
 
 VENICE_LIRA = [(1284, 1349, 3.0), (1350, 1399, 3.9), (1400, 1449, 4.6), (1450, 1499, 5.5), (1500, 1549, 6.5),
                (1550, 1599, 8.5), (1600, 1649, 12.0), (1650, 1699, 17.0), (1700, 1749, 19.0), (1750, 1797, 22.0)]
-ducat_series = [metal_point(y, 3.53, "gold", "ducat", "low" if y < 1400 else "medium",
-                            lambda y, g: src("wp_ducat", "The Venetian ducat (zecchino) was 3.545 g of .997 gold (≈3.53 g fine), unchanged 1284-1797."))
+ducat_series = [metal_point(y, 3.545 * 0.9947, "gold", "ducat", "low" if y < 1400 else "medium",
+                            lambda y, g: src("wp_ducat", f"The Venetian ducat (zecchino) held 3.545 g of 99.47% gold ({g:.4g} g fine).",
+                                             "The Venetian ducat contained 3.545 grams of 99.47% fine gold"), True)
                 for y in years(1285, 1795)]
 currency("ducat_ve", "Venetian ducat (zecchino)", "Venice; Mediterranean / Levant trade coin", [1284, 1797], "ducat", [
     den("ducat", "Ducat / zecchino / sequin", 1, aliases=["zecchino", "sequin", "chequin", "ducat of gold"]),
@@ -709,55 +863,48 @@ currency("ducat_ve", "Venetian ducat (zecchino)", "Venice; Mediterranean / Levan
                  "so this series is a reasonable proxy for any 'ducat' in European literature.",
          aliases=["sequin", "zecchino"])
 
-ITL_AGIO = {1865: 1.0, 1870: 1.05, 1875: 1.10, 1880: 1.07, 1885: 1.0, 1890: 1.01, 1895: 1.06, 1900: 1.06, 1905: 1.0, 1910: 1.0}
-ITL_USD = {1915: (0.165, "medium", "1915 ≈ 6.1 lire per $ (wartime depreciation from par 5.18)."),
-           1920: (0.0500, "medium", "1920 ≈ 20 lire per $."), 1925: (0.0397, "medium", "1925 ≈ 25.2 lire per $."),
-           1930: (0.0524, "high", "1927-36 'quota 90' parity ≈ 19.08 lire per $."),
-           1935: (0.0814, "medium", "1935 ≈ 12.3 lire per $ (after dollar devaluation)."),
-           1940: (0.0505, "low", "1940 official ≈ 19.8 lire per $."), 1945: (0.01, "very low", "1945 ≈ 100 lire per $ (Allied military rate)."),
-           1950: (1 / 625, "high", "Bretton Woods parity 625 lire per $ (1949-71)."), 1955: (1 / 625, "high", "Parity 625 lire per $."),
-           1960: (1 / 621, "high", "≈ 621 lire per $.")}
 lira_series = []
 for y in years(1865, 2000):
-    if y <= 1910:
-        a = ITL_AGIO[y]
-        lira_series.append(compiled_gbp_point(y, 1 / 25.2215 / a, "lira", "medium", [
-            ("wp_lmu", "LMU parity: 1 lira = 1 franc = 1/25.2215 £."),
-            ("wp_lira", f"Inconvertible paper lira traded at ≈ {a:.2f} lire per gold lira in {y} (agio)." if a != 1 else
-             f"Lira at or near gold parity in {y}.")]))
-    elif y in ITL_USD:
-        v, c, n = ITL_USD[y]
-        lira_series.append(compiled_usd_point(y, v, "lira", c, "wp_lira", n, [src("mw_fx", "Annual average dollar rate.")]))
+    if y == 1865:
+        lira_series.append(gold_parity_point(y, 0.290322, "lira", "high", src(
+            "wp_lmu", "Italy joined the Latin Monetary Union in 1865: 1 lira = 1 franc = 0.290322 g fine gold.", "One LMU franc represented 4.5 g of fine silver or 0.290322 g of fine gold.")))
+    elif y <= 1910:
+        lira_series.append(fx_gbp_point("ITL", y, "lira", "medium",
+                                        "Paper lira inconvertible from 1866 (corso forzoso), so it traded below gold parity in some years."))
+    elif y == 1945:
+        continue  # no dataset has an official 1945 rate (MeasuringWorth starts again in 1946)
+    elif y < 1965:
+        lira_series.append(fx_point("ITL", y, "lira", "low" if y == 1940 else "high" if y >= 1950 else "medium"))
     else:
         lira_series.append(modern_point("ITL", y, "lira"))
 currency("itl", "Italian lira", "Italy", [1861, 2001], "lira", [
     den("lira", "Lira", 1, symbol="L."), den("centesimo", "Centesimo", 0.01),
     den("soldo", "Soldo (colloquial)", 0.05), den("scudo", "Scudo (5 lire silver)", 5),
-], lira_series, "Replaced by the euro at 1936.27 lire per euro. Pre-unification Italian states had their own lire, scudi and ducats.",
+], lira_series, "Replaced by the euro at 1936.27 lire per euro. 1945 omitted (no reliable official rate). Pre-unification "
+                "Italian states had their own lire, scudi and ducats.",
          successor="eur")
 
 # ============================================================ NETHERLANDS
-NLG_SILVER = [(1600, 10.4), (1620, 10.0), (1660, 9.613), (1840, 9.613), (1841, 9.45), (1874, 9.45)]
-NLG_USD = {1915: 0.405, 1920: 0.33, 1925: 0.401, 1930: 0.402, 1935: 0.677, 1940: 0.532, 1945: 0.377,
-           1950: 0.263, 1955: 0.263, 1960: 0.265}
+# (from year, g fine silver, quote from the cited table or text; None = not stated there)
+NLG_SILVER = [(1600, 10.4, None), (1618, 10.16, "| 1618 || 10.16"), (1659, 9.67, "| 1659–1800 || 9.67"),
+              (1801, 9.67, None), (1817, 9.613, "redefined the Gulden as either 9.613 g silver or 0.60561 g gold"),
+              (1840, 9.45, "in 1840 by reducing the gulden to 9.45 g fine silver")]
 nlg_series = []
 for y in years(1600, 2000):
     if y <= 1870:
-        nlg_series.append(metal_point(y, interp(NLG_SILVER, y), "silver", "guilder", "medium",
-                                      lambda y, g: src("wp_guilder", f"Guilder of {y} ≈ {g:.4g} g fine silver "
-                                                                     "(1681 standard 9.613 g; 1840 reduced to 9.45 g; pre-1681 interpolated).")))
+        _, g, q = step(NLG_SILVER, y)
+        nlg_series.append(metal_point(y, g, "silver", "guilder", "medium",
+                                      lambda y, g, q=q: src("wp_guilder", f"Guilder of {y}: {g:.4g} g fine silver." if q else
+                                                            f"Estimate: guilder of {y} ≈ {g:.4g} g fine silver (no standard stated "
+                                                            "for these years on the cited page).", q), q is not None))
     elif y <= 1910:
-        nlg_series.append(compiled_gbp_point(y, 1 / 12.107, "guilder", "high", [("wp_guilder", "Gold standard from 1875: £1 = 12.107 guilders.")]))
-    elif y in NLG_USD:
-        v = NLG_USD[y]
-        nlg_series.append(compiled_usd_point(y, v, "guilder", "high" if y >= 1950 else "medium", "mw_fx",
-                                             f"Approximate annual average ({1/v:.3g} guilders per $)."))
-    elif y == 2000:
-        nlg_series.append(modern_point("NLG", y, "guilder"))
+        nlg_series.append(gold_parity_point(y, 0.6048, "guilder", "high", src(
+            "wp_guilder", "Gold standard from 1875: 1 guilder = 0.6048 g fine gold.", "| 1875 || 0.6048 g gold")))
+    elif y < 2000:
+        if has_fx("NLG", y):
+            nlg_series.append(fx_point("NLG", y, "guilder", "medium" if y in (1940, 1945) else "high"))
     else:
-        nlg_rates = {1965: 3.60, 1970: 3.60, 1975: 2.53, 1980: 1.99, 1985: 3.32, 1990: 1.82, 1995: 1.61}
-        nlg_series.append(compiled_usd_point(y, 1 / nlg_rates[y], "guilder", "high", "mw_fx",
-                                             f"{y} annual average ≈ {nlg_rates[y]} guilders per $."))
+        nlg_series.append(modern_point("NLG", y, "guilder"))
 currency("nlg", "Dutch guilder", "Dutch Republic / Netherlands", [1575, 2001], "guilder", [
     den("guilder", "Guilder / gulden", 1, symbol="ƒ", aliases=["gulden", "florin", "fl."]),
     den("stuiver", "Stuiver", 0.05, aliases=["stiver"]),
@@ -776,19 +923,24 @@ currency("nlg", "Dutch guilder", "Dutch Republic / Netherlands", [1575, 2001], "
 milreis_series = []
 for y in years(1725, 1890):
     if y < 1855:
-        milreis_series.append(metal_point(y, 2.053, "gold", "milréis", "medium",
-                                          lambda y, g: src("wp_moidore", "Gold peça/johannes of 6,400 réis held ≈ 13.14 g fine gold "
-                                                                         "(moidore of 4,800 réis passed at 27s in Britain) → 2.053 g gold per 1,000 réis.")))
+        reis = 6.4 if y < 1826 else 7.5 if y < 1837 else 8.0
+        milreis_series.append(metal_point(y, 13.145 / reis, "gold", "milréis", "medium",
+                                          lambda y, g, reis=reis: src("wp_real_pt", f"The gold peça of 13.145 g fine gold passed for "
+                                                                      f"{reis * 1000:,.0f} réis in {y}, so 1 milréis = {g:.4g} g gold.",
+                                                                      "peça of 13.145 g fine gold was raised in value from 6$400 to 7$500 "
+                                                                      "in 1826, 8$000 in 1837, and 8$085 in 1854"), True))
     else:
-        milreis_series.append(compiled_gbp_point(y, 1 / 4.5, "milréis", "high",
-                                                 [("wp_real_pt", "Gold standard of 1854: £1 = 4,500 réis.")]))
+        milreis_series.append(gold_parity_point(y, 1.62585, "milréis", "high", src(
+            "wp_real_pt", "Gold standard of 1854: 1 milréis = 1.62585 g fine gold.",
+            "In 1854, Portugal adopted a gold standard with the milréis equal to 1.62585 g")))
 currency("pte_real", "Portuguese real / milréis", "Portugal, Brazil (colonial)", [1500, 1911], "milréis (1,000 réis)", [
     den("milreis", "Milréis (1,000 réis)", 1, symbol="1$000", aliases=["mil réis"]),
     den("real", "Real (pl. réis)", 0.001, aliases=["rei", "réis"]),
     den("vintem", "Vintém", 0.02, notes="20 réis."),
     den("tostao", "Tostão", 0.1, notes="100 réis."),
     den("cruzado", "Cruzado", 0.4, notes="400 réis (later 480)."),
-    den("moidore", "Moidore (moeda d'ouro)", 4.8, aliases=["moeda"], notes="Gold 4,800 réis; current in England and its colonies at 27s."),
+    den("moidore", "Moidore (moeda d'ouro)", 4.8, aliases=["moeda"],
+        notes="Gold 4,800 réis (1688-1800), ≈ 13s 5½d in England; the coin usually called a 'moidore' there was the double, ≈ 27s."),
     den("johannes", "Johannes / joe / peça", 6.4, aliases=["joe", "half-joe (3.2)"], notes="Gold 6,400 réis; ≈ 36s sterling."),
     den("conto", "Conto (de réis)", 1000, notes="1,000,000 réis."),
 ], milreis_series, "The moidore and johannes were widely used in British America and the Caribbean. "
@@ -797,20 +949,25 @@ currency("pte_real", "Portuguese real / milréis", "Portugal, Brazil (colonial)"
 # ============================================================ RUSSIA
 RUB_SILVER = [(1705, 24.0), (1718, 20.7), (1763, 20.7), (1764, 18.0), (1840, 18.0)]
 RUB_PENCE = {1845: 38.0, 1850: 38.0, 1855: 37.0, 1860: 37.0, 1865: 30.0, 1870: 30.0, 1875: 31.0, 1880: 25.0,
-             1885: 24.0, 1890: 27.0, 1895: 25.4, 1900: 25.38, 1905: 25.38, 1910: 25.38}
+             1885: 24.0, 1890: 27.0, 1895: 25.4}
 rub_series = []
 for y in years(1705, 1915):
     if y <= 1840:
         rub_series.append(metal_point(y, interp(RUB_SILVER, y), "silver", "silver ruble", "medium",
-                                      lambda y, g: src("wp_ruble", f"Silver ruble of {y} ≈ {g:.3g} g fine silver "
-                                                                   "(Peter I's coinage reduced to 1718; Catherine II's 1764 standard of 18 g held to 1885).")))
-    elif y <= 1910:
+                                      lambda y, g: src("wp_ruble", f"Estimate: silver ruble of {y} ≈ {g:.3g} g fine silver (these "
+                                                                   "standards are not stated on the cited page)."), False))
+    elif y < 1900:
         p = RUB_PENCE[y]
-        notes = [("wp_ruble", f"{y}: ruble ≈ {p}d sterling" + (" (Witte gold standard: £1 = 9.457 rubles)." if y >= 1900 else
-                                                                  " (credit-ruble exchange rate in London; paper inconvertible 1858-1897)."))]
-        rub_series.append(compiled_gbp_point(y, p / 240, "ruble", "high" if y >= 1900 else "medium", notes))
+        rub_series.append(estimate_gbp_point(y, p / 240, "ruble", "medium", [src(
+            "wp_ruble", f"Estimate: credit ruble ≈ {p}d sterling in {y} (paper inconvertible 1858-1897; this rate is not stated "
+                        "on the cited page).")]))
+    elif y <= 1910:
+        rub_series.append(gold_parity_point(y, 0.77424, "ruble", "high", src(
+            "wp_ruble", "Witte's 1897 gold ruble: 0.77424 g fine gold.", "(17.424 dolya or 0.77424 g fine gold)")))
     else:
-        rub_series.append(compiled_usd_point(y, 0.33, "ruble", "low", "wp_ruble", "1915 ≈ 3 rubles per $ (par 1.94) as wartime inflation began."))
+        rub_series.append(via_usd(y, 0.33, "low", [src("wp_ruble", "Estimate: ≈ 3 rubles per $ in 1915 (gold parity ≈ 1.94) as "
+                                                                   "wartime inflation began; no dataset covers this year.")],
+                                  "estimated rate → US CPI", provenance="estimate"))
 currency("rub_imp", "Russian ruble (imperial)", "Russian Empire", [1704, 1917], "ruble", [
     den("ruble", "Ruble (rouble)", 1, symbol="руб.", aliases=["rouble", "silver ruble", "credit ruble"]),
     den("kopek", "Kopek (kopeck)", 0.01),
@@ -838,16 +995,16 @@ RYO_YEN = [(1605, 100000), (1690, 100000), (1700, 75000), (1710, 55000), (1835, 
 ryo_series = []
 for y in years(1605, 1865):
     yen = interp(RYO_YEN, y)
-    usd = yen * JP_CPI_FACTOR / G5A[2025]["JPY"]
+    usd = yen * JP_CPI_FACTOR / FRED_PER_USD["JPY"][2025]
     ryo_series.append(point(y, usd, "very low", [
         src("boj_ryo", f"Rice-price basis: the Bank of Japan Currency Museum puts one ryō at ≈ ¥100,000 in early Edo, ¥40,000-60,000 in "
                        f"mid-to-late Edo and ¥4,000-10,000 in the bakumatsu inflation; interpolated ≈ ¥{yen:,.0f} for {y}, "
                        f"×{JP_CPI_FACTOR} for Japanese inflation to 2025."),
         src("wp_ryo", "Koban gold content fell from ≈15 g (Keichō 1601) to ≈1.9 g (Man'en 1860), the main driver of the declining value."),
-        src("g5a_2025", f"Converted at the 2025 average of {G5A[2025]['JPY']} yen per dollar."),
+        src("fred_jpy", f"Converted at the 2025 average of {FRED_PER_USD['JPY'][2025]} yen per dollar."),
         src("boj_ryo", f"Wage basis (a carpenter's pay) gives ¥300,000-400,000 per ryō, used as the upper bound.")],
         "commodity (rice) price equivalence → 2025 yen → USD", low=usd / 3,
-        high=max(usd * 3, 350000 * JP_CPI_FACTOR / G5A[2025]["JPY"]) if y < 1860 else usd * 6, provenance="compiled"))
+        high=max(usd * 3, 350000 * JP_CPI_FACTOR / FRED_PER_USD["JPY"][2025]) if y < 1860 else usd * 6, provenance="estimate"))
 currency("ryo", "Ryō (Tokugawa coinage)", "Japan", [1601, 1871], "ryō", [
     den("ryo", "Ryō (koban)", 1, symbol="両", aliases=["koban", "oban (=10 ryō nominal, ceremonial)"]),
     den("bu", "Bu (ichibu)", 0.25, symbol="分"),
@@ -860,22 +1017,19 @@ currency("ryo", "Ryō (Tokugawa coinage)", "Japan", [1601, 1871], "ryō", [
 ], ryo_series, "No price index exists: values follow the Bank of Japan's rice-price rule of thumb (low end) — wage-based "
                "figures are 3-8× higher. Converted 1 ryō = 1 yen in 1871.", successor="jpy")
 
-JPY_USD = {1915: 0.495, 1920: 0.495, 1925: 0.41, 1930: 0.494, 1935: 0.287, 1940: 0.234, 1950: 1 / 360, 1955: 1 / 360,
-           1960: 1 / 360}
 jpy_series = []
 for y in years(1870, 2025):
     if y <= 1895:
         jpy_series.append(metal_point(y, 24.26, "silver", "yen", "medium",
-                                      lambda y, g: src("wp_yen", "Silver yen (trade-dollar standard) of 1871: 26.96 g at .900 = 24.26 g fine silver; "
-                                                                 "Japan was de facto on silver until 1897.")))
+                                      lambda y, g: src("wp_yen", "The 1871 yen was 24.26 g of silver; Japan was de facto on silver until 1897.",
+                                                       "with the yen defined as 1.5 g of gold, or 24.26 g of silver"), True))
     elif y <= 1910:
-        jpy_series.append(compiled_gbp_point(y, 1 / 9.763, "yen", "high", [("wp_yen", "Gold yen of 1897 (0.75 g fine gold): £1 = 9.763 yen, $1 = 2.006 yen.")]))
+        jpy_series.append(gold_parity_point(y, 0.75, "yen", "high", src(
+            "wp_yen", "Gold exchange standard from 1897: 1 yen = 0.75 g fine gold.", "defining the yen as 0.75g fine gold")))
     elif y == 1945:
         continue
-    elif y in JPY_USD:
-        v = JPY_USD[y]
-        jpy_series.append(compiled_usd_point(y, v, "yen", "high" if y >= 1950 else "medium", "mw_fx",
-                                             f"Approximate annual average ({1/v:.4g} yen per $)." + (" Fixed 360/$ 1949-71." if y >= 1950 else "")))
+    elif y < 1965:
+        jpy_series.append(fx_point("JPY", y, "yen", "high" if y >= 1950 else "medium"))
     else:
         jpy_series.append(modern_point("JPY", y, "yen"))
 currency("jpy", "Japanese yen", "Japan", [1871, None], "yen", [
@@ -891,12 +1045,13 @@ tael_series = []
 for y in years(1650, 1930):
     if y <= 1910:
         tael_series.append(metal_point(y, 36.0, "silver", "tael", "medium",
-                                       lambda y, g: src("wp_tael", "A tael (liang) of silver: Kuping ≈ 37.3 g, Haikwan ≈ 37.8 g; "
-                                                                   "treated here as ≈ 36 g fine silver after typical sycee fineness.")))
+                                       lambda y, g: src("wp_tael", "Estimate: the tael weighed about 37.3 g; silver taels are taken as ≈ 36 g "
+                                                                   "fine silver after typical sycee fineness, which the page does not state."), False))
     else:
         v = TAEL_USD[y]
-        tael_series.append(compiled_usd_point(y, v, "Haikwan tael", "medium", "mw_fx",
-                                              "Chinese Maritime Customs annual Haikwan tael value in dollars (followed world silver prices)."))
+        tael_series.append(via_usd(y, v, "medium", [src("wp_tael", f"Estimate: Haikwan tael ≈ ${v} in {y} (it followed world silver "
+                                                                   "prices); no dataset covers it.")],
+                                   "estimated rate → US CPI", provenance="estimate"))
 currency("tael", "Chinese silver tael (liang)", "China (Qing and Republic)", [1644, 1933], "tael", [
     den("tael", "Tael / liang", 1, symbol="两", aliases=["liang", "Haikwan tael", "Kuping tael"]),
     den("mace", "Mace / qian", 0.1, symbol="钱"),
@@ -911,17 +1066,10 @@ currency("tael", "Chinese silver tael (liang)", "China (Qing and Republic)", [16
     den("sycee", "Sycee ingot (yuanbao)", 50, notes="Standard large ingot ≈ 50 taels."),
 ], tael_series, "Silver value via the sterling route. Abolished 1933 in favour of the silver yuan.", successor="cny")
 
-CNY_RATES = {1955: 2.46, 1960: 2.46, 1965: 2.46, 1970: 2.46, 1975: 1.86, 1980: 1.50, 1985: 2.94, 1990: 4.78,
-             1995: 8.35, 2000: 8.28, 2005: 8.19, 2010: 6.77}
 cny_series = []
 for y in years(1955, 2025):
-    if y in CNY_RATES:
-        r = CNY_RATES[y]
-        cny_series.append(compiled_usd_point(y, 1 / r, "yuan", "low" if y < 1980 else "medium" if y < 1995 else "high", "wp_rmb",
-                                             f"{y} official rate ≈ {r} yuan per $" + (" (non-convertible currency; official rate only)." if y < 1995 else "."),
-                                             [src("mw_fx", "Annual average official rate.")]))
-    else:
-        cny_series.append(modern_point("CNY", y, "yuan"))
+    cny_series.append(fx_point("CNY", y, "yuan", "low" if y < 1980 else "medium" if y < 1995 else "high",
+                               "Official rate of a non-convertible currency." if y < 1995 else ""))
 currency("cny", "Renminbi (yuan)", "People's Republic of China", [1949, None], "yuan", [
     den("yuan", "Yuan", 1, symbol="¥", aliases=["renminbi", "RMB", "kuai", "元"]),
     den("jiao", "Jiao", 0.1, aliases=["mao"]), den("fen", "Fen", 0.01),
@@ -929,25 +1077,32 @@ currency("cny", "Renminbi (yuan)", "People's Republic of China", [1949, None], "
 
 # ============================================================ INDIA
 INR_SILVER = [(1600, 11.0), (1835, 11.0), (1836, 10.69)]
-INR_USD = {1915: 0.324, 1920: 0.335, 1925: 0.362, 1930: 0.364, 1935: 0.369, 1940: 0.302, 1945: 0.302,
-           1950: 1 / 4.762, 1955: 1 / 4.762, 1960: 1 / 4.762, 1965: 1 / 4.762, 1970: 1 / 7.5, 1975: 1 / 8.38,
-           1980: 1 / 7.86, 1985: 1 / 12.37, 1990: 1 / 17.5, 1995: 1 / 32.4, 2000: 1 / 44.9, 2005: 1 / 44.1, 2010: 1 / 45.7}
+# pence per rupee, from the table 'Indian silver rupee value (1820-1900)' on the cited page
+INR_PENCE = {1850: 24.3, 1855: 24.2, 1860: 26.0, 1865: 23.8, 1870: 22.5, 1875: 21.6, 1880: 19.9, 1885: 18.2,
+             1890: 18.0, 1895: 13.6}
 inr_series = []
 for y in years(1600, 2025):
-    if y <= 1895:
+    if y < 1850:
         inr_series.append(metal_point(y, interp(INR_SILVER, y), "silver", "rupee", "medium",
-                                      lambda y, g: src("wp_rupee_hist" if y < 1836 else "wp_rupee",
-                                                       f"Rupee of {y} ≈ {g:.4g} g fine silver" + (" (Mughal/early Company rupees ~178 grains, ~96% fine)." if y < 1836 else
-                                                                                                    " (Company rupee of 1835: 180 grains at 11/12 fine). Its sterling value fell with silver after 1873."))))
-    elif y <= 1910:
-        inr_series.append(compiled_gbp_point(y, 1 / 15, "rupee", "high", [("wp_rupee", "Fixed at 1s 4d (15 rupees = £1) from 1899.")]))
-    elif y in INR_USD:
-        v = INR_USD[y]
-        inr_series.append(compiled_usd_point(y, v, "rupee", "high" if y >= 1950 else "medium", "wp_rupee",
-                                             f"{y} ≈ {1/v:.4g} rupees per $ (1927-66 pegged at 1s 6d sterling; 4.76/$ 1949-66; 7.5/$ 1966-71).",
-                                             [src("mw_fx", "Annual average dollar rate.")]))
+                                      lambda y, g: src("wp_rupee_hist",
+                                                       f"Estimate: rupee of {y} ≈ {g:.4g} g fine silver. The page gives the rupiya's weight "
+                                                       "(178 grains, 11.53 g) but not its fineness or later standards.", "weighing 178 grains"),
+                                      False))
+    elif y in INR_PENCE:
+        d = INR_PENCE[y]
+        inr_series.append(standard_gbp_point(y, d / 240, "rupee", "high", [src(
+            "wp_rupee", f"Exchange rate in {y}: {d}d per rupee.", f"| {y}||{d}||")]))
+    elif y <= 1915:
+        icc = src("wp_icc", "Gold-exchange standard from 1899: 15 rupees per sovereign.",
+                  "the official exchange rate of the rupee be established at 15 rupees per British sovereign, or 1 shilling and 4 pence per rupee")
+        if y <= 1910:
+            inr_series.append(standard_gbp_point(y, 1 / 15, "rupee", "high", [icc]))
+        else:  # from 1915 values go through the dollar; MeasuringWorth's rupee series starts in 1916
+            usd = USD_PER_GBP[y] / 15
+            inr_series.append(via_usd(y, usd, "medium", [icc, src("boe_fx", f"{y}: ${USD_PER_GBP[y]:.4f} per £ → ${usd:.4g} per rupee.")],
+                                      "legal rate → US CPI", provenance="quoted"))
     else:
-        inr_series.append(modern_point("INR", y, "rupee"))
+        inr_series.append(fx_point("INR", y, "rupee", "high" if y >= 1950 else "medium"))
 currency("inr", "Indian rupee", "Mughal India, British India, Republic of India", [1540, None], "rupee", [
     den("rupee", "Rupee / rupiya", 1, symbol="Rs", aliases=["rupiya", "₹"]),
     den("anna", "Anna", 1 / 16, valid=(1600, 1957)),
@@ -957,13 +1112,14 @@ currency("inr", "Indian rupee", "Mughal India, British India, Republic of India"
     den("mohur", "Mohur (gold)", 15, notes="Gold coin, nominally 15 rupees (market 14-17)."),
     den("pagoda", "Star pagoda (Madras)", 3.5, valid=(1600, 1818), notes="South Indian gold coin ≈ 3½ rupees."),
     den("lakh", "Lakh", 100000), den("crore", "Crore", 10000000),
-], inr_series, "Pre-1895 values via silver content; the rupee's sterling value halved between 1873 and 1894 as silver fell.")
+], inr_series, "Before 1850 values via an estimated silver content; 1850-1895 from the rupee's sterling exchange rate, which "
+                "halved between 1873 and 1894 as silver fell.")
 
 # ============================================================ OTTOMAN
 AKCE_SILVER = [(1330, 1.15), (1400, 1.0), (1455, 0.85), (1495, 0.68), (1580, 0.6), (1590, 0.38), (1600, 0.29),
                (1650, 0.25), (1685, 0.15)]
-akce_series = [metal_point(y, interp(AKCE_SILVER, y), "silver", "akçe", "low",
-                           lambda y, g: src("wp_akce", f"Akçe of {y} ≈ {g:.3g} g silver (Malanima/Pamuk series, interpolated; "
+akce_series = [metal_point(y, interp(AKCE_SILVER, y), "silver", "akçe", "low", checked=False, coin_src=
+                           lambda y, g: src("wp_akce", f"Estimate: akçe of {y} ≈ {g:.3g} g silver (after the Malanima/Pamuk series, interpolated; "
                                                        "1585-86 debasement halved it)."))
                for y in years(1330, 1685)]
 currency("akce", "Ottoman akçe (asper)", "Ottoman Empire", [1326, 1687], "akçe", [
@@ -981,11 +1137,11 @@ kurus_series = []
 for y in years(1690, 1910):
     if y < 1845:
         kurus_series.append(metal_point(y, interp(KURUS_SILVER, y), "silver", "kuruş", "low",
-                                        lambda y, g: src("pamuk", f"Kuruş of {y} ≈ {g:.3g} g fine silver (Pamuk ch. 9-11; 120 akçe = 1 kuruş, "
-                                                                  "repeated debasements especially under Mahmud II, 1808-39).")))
+                                        lambda y, g: src("pamuk", f"Estimate: kuruş of {y} ≈ {g:.3g} g fine silver (after Pamuk ch. 9-11, "
+                                                                  "interpolated; repeated debasements especially under Mahmud II, 1808-39)."), False))
     else:
-        kurus_series.append(compiled_gbp_point(y, 0.9033 / 100, "kuruş", "medium", [
-            ("wp_kurus", "1844 reform: gold lira of 6.614 g fine gold = 100 kuruş, so 1 lira ≈ 18s 1d and 1 kuruş ≈ 2.17d.")]))
+        kurus_series.append(gold_parity_point(y, 6.61519 / 100, "kuruş", "medium", src(
+            "wp_ottoman_lira", "1844 reform: the gold lira of 6.61519 g = 100 kuruş.", "LT 1 = 6.61519 grams pure gold")))
 currency("kurus", "Ottoman kuruş (piastre)", "Ottoman Empire; Egypt, Levant", [1687, 1923], "kuruş", [
     den("kurus", "Kuruş / piastre", 1, aliases=["piastre", "piaster", "qirsh", "ghirsh"]),
     den("para", "Para", 1 / 40), den("akce", "Akçe", 1 / 120),
@@ -1001,17 +1157,14 @@ currency("eur", "Euro", "Eurozone", [1999, None], "euro", [
     den("euro", "Euro", 1, symbol="€"), den("cent", "Cent", 0.01),
 ], eur_series, "Fixed conversion rates: 6.55957 FRF, 1.95583 DEM, 1936.27 ITL, 166.386 ESP, 2.20371 NLG, 13.7603 ATS, 0.787564 IEP.")
 
-CHF_USD = {1915: 0.19, 1920: 0.168, 1925: 0.193, 1930: 0.194, 1935: 0.325, 1940: 0.229, 1945: 0.233, 1950: 0.229,
-           1955: 0.233, 1960: 0.231}
 chf_series = []
 for y in years(1850, 2025):
     if y <= 1910:
-        chf_series.append(compiled_gbp_point(y, 1 / 25.2215, "Swiss franc", "high",
-                                             [("wp_lmu", "Swiss franc = French franc (Latin Monetary Union / same silver and gold standard).")]))
-    elif y in CHF_USD:
-        v = CHF_USD[y]
-        chf_series.append(compiled_usd_point(y, v, "Swiss franc", "high" if y >= 1950 else "medium", "mw_fx",
-                                             f"Approximate annual average ({1/v:.3g} francs per $)."))
+        chf_series.append(gold_parity_point(y, 0.29032, "Swiss franc", "high", src(
+            "wp_chf", "Introduced at par with the French franc: 0.29032 g fine gold.",
+            "The Swiss franc was introduced at par with the French franc, at 4.5 g fine silver or 9/31 g = 0.29032 g fine gold")))
+    elif y < 1965:
+        chf_series.append(fx_point("CHF", y, "Swiss franc", "high" if y >= 1950 else "medium"))
     else:
         chf_series.append(modern_point("CHF", y, "Swiss franc"))
 currency("chf", "Swiss franc", "Switzerland", [1850, None], "franc", [
@@ -1019,16 +1172,14 @@ currency("chf", "Swiss franc", "Switzerland", [1850, None], "franc", [
     den("rappen", "Rappen / centime", 0.01), den("batzen", "Batzen (colloquial 10 Rp.)", 0.1),
 ], chf_series, "")
 
-SEK_USD = {1915: 0.27, 1920: 0.21, 1925: 0.268, 1930: 0.268, 1935: 0.253, 1940: 0.238, 1945: 0.238, 1950: 0.193,
-           1955: 0.193, 1960: 0.193}
 sek_series = []
 for y in years(1875, 2025):
     if y <= 1910:
-        sek_series.append(compiled_gbp_point(y, 1 / 18.159, "krona", "high", [("wp_sek", "Scandinavian Monetary Union gold standard: £1 = 18.16 kronor.")]))
-    elif y in SEK_USD:
-        v = SEK_USD[y]
-        sek_series.append(compiled_usd_point(y, v, "krona", "high" if y >= 1950 else "medium", "mw_fx",
-                                             f"Approximate annual average ({1/v:.3g} kronor per $)."))
+        sek_series.append(gold_parity_point(y, 1 / 2.48, "krona", "high", src(
+            "wp_sek", "Scandinavian Monetary Union: 1 krona = 1/2480 kg fine gold.",
+            "with the krona/krone defined as 1/2480 of a kilogram of pure gold")))
+    elif y < 1965:
+        sek_series.append(fx_point("SEK", y, "krona", "high" if y >= 1950 else "medium"))
     else:
         sek_series.append(modern_point("SEK", y, "krona"))
 currency("sek", "Swedish krona", "Sweden (Danish and Norwegian kroner were at par until 1914)", [1873, None], "krona", [
@@ -1036,20 +1187,14 @@ currency("sek", "Swedish krona", "Sweden (Danish and Norwegian kroner were at pa
     den("ore", "Öre", 0.01),
 ], sek_series, "Before 1914 the Danish and Norwegian krone were interchangeable with the Swedish krona.")
 
-ESP_GBP = {1870: 25.6, 1875: 26.0, 1880: 26.0, 1885: 26.3, 1890: 26.9, 1895: 30.0, 1900: 32.9, 1905: 32.6, 1910: 27.0}
-ESP_USD = {1915: 0.19, 1920: 0.15, 1925: 0.14, 1930: 0.11, 1935: 0.137, 1940: 0.091, 1945: 0.091, 1950: 1 / 40,
-           1955: 1 / 42, 1960: 1 / 60, 1965: 1 / 60, 1970: 1 / 70}
 esp_series = []
 for y in years(1870, 2000):
-    if y in ESP_GBP:
-        r = ESP_GBP[y]
-        esp_series.append(compiled_gbp_point(y, 1 / r, "peseta", "medium", [
-            ("wp_peseta", f"Peseta nominally at LMU parity (25.22/£) but on an inconvertible paper/silver basis; London rate ≈ {r} per £ in {y}.")]))
-    elif y in ESP_USD:
-        v = ESP_USD[y]
-        esp_series.append(compiled_usd_point(y, v, "peseta", "low" if 1935 < y < 1960 else "medium", "mw_fx",
-                                             f"Approximate annual average ({1/v:.3g} pesetas per $)" + (
-                                                 "; multiple official rates under Franco." if 1935 < y < 1960 else ".")))
+    if y <= 1910:
+        esp_series.append(fx_gbp_point("ESP", y, "peseta", "medium",
+                                       "The peseta was nominally at Latin Monetary Union parity but inconvertible, so it traded below it."))
+    elif y < 1975:
+        esp_series.append(fx_point("ESP", y, "peseta", "low" if 1935 < y < 1960 else "medium",
+                                   "Multiple official rates under Franco." if 1935 < y < 1960 else ""))
     else:
         esp_series.append(modern_point("ESP", y, "peseta"))
 currency("esp", "Spanish peseta", "Spain", [1868, 2001], "peseta", [
@@ -1063,7 +1208,7 @@ FLOUR_NOTE = ("Goods basis: ancient prices are matched to a modern price of ≈ 
 
 
 def ancient(y, usd, low, high, sources, method):
-    return point(y, usd, "very low", sources, method, low=low, high=high, provenance="compiled")
+    return point(y, usd, "very low", sources, method, low=low, high=high, provenance="estimate")
 
 
 DEN = [(-200, 35), (-150, 35), (-100, 35), (-50, 30), (1, 30), (50, 30), (100, 28), (150, 25), (200, 15), (250, 6),
@@ -1161,7 +1306,7 @@ currency("shekel", "Shekel (ancient Near East / biblical)", "Mesopotamia, Israel
 # Fictional currencies carry no year-based series. Where the work gives enough to estimate a real-world value
 # (prices or wages), a single undated estimate is stored as a one-point series; otherwise the series is empty.
 def fictional_point(year, usd, low, high, sources, method):
-    return point(year, usd, "very low", sources, method, low=low, high=high, provenance="compiled")
+    return point(year, usd, "very low", sources, method, low=low, high=high, provenance="estimate")
 
 
 dnd_series = [fictional_point(2014, 250, 100, 600, [
@@ -1289,8 +1434,12 @@ doc = {
             "goods-vs-wage bounds), not statistical confidence intervals.",
         ],
         "provenance": {
-            "computed": "Calculated directly from downloaded datasets (BoE, ONS, Minneapolis Fed, Fed G.5A) plus a metal content or parity.",
-            "compiled": "Uses an exchange rate, parity, or estimate entered by hand from the cited reference; verify against the source before relying on it.",
+            "dataset": ("Every exchange rate and price index behind the value was read from a downloaded dataset (Bank of England, "
+                        "ONS, Minneapolis Fed, FRED, MeasuringWorth, Jordà-Schularick-Taylor, Penn World Table)."),
+            "quoted": ("Also uses a parity, coin standard or rate that is quoted from the cited source; the source's 'quote' "
+                       "field holds the text."),
+            "estimate": ("Uses at least one number that is neither downloaded nor quoted: an interpolation, a reconstruction "
+                         "or a judgement (including all ancient, Edo-period and fictional values)."),
         },
         "interpolation": "Between data points, interpolate linearly in log(usd2025). Do not extrapolate beyond a currency's first or last point.",
         "fictional": ("Currencies with 'fictional': true come from novels, films and games ('work' names the source). Their "

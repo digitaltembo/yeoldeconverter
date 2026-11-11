@@ -5,6 +5,8 @@ export interface Source {
   title: string;
   url: string;
   reasoning: string;
+  /** Text from the source that states the parity, coin standard or rate used. */
+  quote?: string;
 }
 
 // ---------------------------------------------------------------- currencies
@@ -40,8 +42,12 @@ export interface DataPoint {
   confidence: Confidence;
   /** Omitted in slim data. */
   method?: string;
-  /** Omitted in slim data. */
-  provenance?: "computed" | "compiled";
+  /**
+   * The weakest number behind the value: "dataset" (all rates and price indexes from downloaded datasets),
+   * "quoted" (also a parity, standard or rate quoted from its source) or "estimate" (at least one number is neither).
+   * Omitted in slim data.
+   */
+  provenance?: "dataset" | "quoted" | "estimate";
   /** Omitted in slim data. */
   sources?: Source[];
 }

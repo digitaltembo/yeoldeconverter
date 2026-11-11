@@ -561,7 +561,7 @@
               (
                 s,
               ) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>
-      <span class="why">${esc(s.reasoning)}</span></li>`,
+      <span class="why">${esc(s.reasoning)}</span>${s.quote ? ` <q class="why">${esc(s.quote)}</q>` : ""}</li>`,
             )
             .join("")}</ul>`;
         }
@@ -828,9 +828,11 @@
 
       <h3>How this was worked out</h3>
       <p>Method: ${esc(p0.method)}. ${
-        p0.provenance === "compiled"
-          ? "Some figures here were compiled by hand from the cited references (not computed from a downloaded dataset)."
-          : "Computed from downloaded price-index and exchange-rate datasets."
+        {
+          dataset: "Computed from downloaded price-index and exchange-rate datasets.",
+          quoted: "Computed from downloaded datasets plus a parity, coin standard or rate quoted from the cited source.",
+          estimate: "Includes an estimated figure that is not taken from a dataset or quoted from a source, so treat it as approximate.",
+        }[p0.provenance] ?? ""
       }</p>
       ${c.notes ? `<p class="sub">${esc(c.notes)}</p>` : ""}
       ${c.fictional ? `<p class="sub">Fictional: from ${esc(c.work)}.</p>` : ""}

@@ -1,2 +1,4 @@
 node_modules/
 dist/
+sources/
+scripts/__pycache__/

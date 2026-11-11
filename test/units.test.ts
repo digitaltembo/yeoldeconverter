@@ -33,7 +33,7 @@ test("uncertain units carry a range through conversion", () => {
   const r = U.convert(10, "cubit_bib", "foot");
   assert.equal(r.precision, "uncertain");
   assert.ok(r.low < r.value && r.value < r.high);
-  close(r.low, (10 * 0.444) / 0.3048);
+  close(r.low, (10 * 0.4816) / 0.3048);
 });
 
 test("cannot convert across categories", () => {
@@ -68,7 +68,7 @@ test("astronomical, atomic, novelty and Planck units", () => {
 test("fictional units", () => {
   close(U.convert(70, "glumgluff", "foot").value, 6);
   close(U.convert(1, "lar", "yard").value, 190000 / 36);
-  assert.equal(U.get("kellicam").precision, "uncertain");
+  assert.equal(U.get("kellicam").precision, "approximate");
   assert.ok(U.search("tolkien").some((u) => u.id === "ranga"));
   assert.ok(U.list().filter((u) => u.fictional).every((u) => u.work && u.precision !== "exact"));
 });

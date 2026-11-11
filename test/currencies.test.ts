@@ -128,3 +128,27 @@ test("every currency's data is usable", () => {
     for (const d of c.denominations) assert.ok(C.denominationValue(c, d, first) > 0, `${c.id}:${d.id}`);
   }
 });
+
+test("Canadian dollar and Mexican pesos", () => {
+  assert.equal(C.get("Canadian dollars").id, "cad");
+  assert.equal(C.get("loonie").id, "cad");
+  assert.equal(C.get("dollars").id, "usd");
+  assert.equal(C.get("Mexican pesos").id, "mxn");
+  assert.throws(() => C.get("pesos"), AmbiguousError);
+  assert.equal(C.parseAmount("3 toonies", "cad", 2020).base, 6);
+  // 2025: Fed G.5A average of 1.3973 CAD per USD
+  close(C.toUSD2025(1, { currency: "cad", year: 2025 }).amount, 1 / 1.3973, 1e-3);
+  // pre-1914 the Canadian dollar was at par with the US gold dollar, the gold peso (1905) worth half of one
+  close(C.convert(2, { currency: "mxp", year: 1910 }, { currency: "cad", year: 1910 }).amount, 1, 1e-2);
+});
+
+test("every data point says how it was sourced", () => {
+  for (const c of C.list()) {
+    for (const p of c.series) {
+      assert.ok(["dataset", "quoted", "estimate"].includes(p.provenance!), `${c.id} ${p.year}: ${p.provenance}`);
+      if (p.provenance === "quoted") assert.ok(p.sources!.some((s) => s.quote), `${c.id} ${p.year} has no quote`);
+      if (c.fictional || ["denarius", "solidus", "drachma_att", "shekel", "ryo"].includes(c.id))
+        assert.equal(p.provenance, "estimate", `${c.id} ${p.year}`);
+    }
+  }
+});
